@@ -13,7 +13,7 @@
 | Output directory | `dist` |
 | Environment variables | None needed in Chronicle mode, which the deployed manifest uses. `PYTH_API_KEY` (server-side only; never `VITE_`-prefixed) matters only if the manifest's oracle becomes `pyth`. It is used by `api/pyth-update.js`, which otherwise answers 503 |
 | Deployment protection | Kept on for preview deployments |
-| Production deployment | `[deployment ID to be added]` |
+| Production deployment | `dpl_FSpcVfnMs4B7hy8jC5tnbKFFxGNh`, built by Vercel from `a39b5a0` on `main`, READY and aliased to `arc.yieldshield.ai` on 19 October 2026. Checked: `/`, `/markets`, `/status`, `/agent.json` and `/llms.txt` return 200; security headers present; the entry bundle contains the factory; `.secrets` paths only return the SPA shell |
 
 **`vercel.json`** is the template's file with two changes:
 
