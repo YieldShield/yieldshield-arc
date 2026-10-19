@@ -2,7 +2,7 @@
   "version": 3,
   "network": "Arc Testnet",
   "chainId": 5042002,
-  "status": "awaiting-testnet-usdc",
+  "status": "deployed-and-verified",
   "rpcUrl": "https://rpc.testnet.arc.io",
   "explorer": "https://explorer.testnet.arc.io",
   "faucet": "https://faucet.circle.com",
@@ -35,15 +35,87 @@
     "tokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
     "messageTransmitterV2": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275"
   },
-  "scenarioOracle": null,
-  "eurcOracle": null,
-  "cirbtcOracle": null,
-  "factory": null,
-  "eurcPool": null,
-  "cirbtcPool": null,
-  "scenarioPool": null,
-  "defaultTerms": null,
-  "transactions": [],
+  "scenarioOracle": "0x23adba2644297979fcb943d1d54fb1f4deeb871a",
+  "eurcOracle": "0xbe38abae66175ce0a86f529b5d564f43186b1b0a",
+  "cirbtcOracle": "0x7a460202e1f8b94f44ca92dfbc2421e2ae3749b6",
+  "factory": "0x77dd612d711c5c3328c6a0eebcb9719955895e1c",
+  "eurcPool": "0x583EcBBf94C2B978A9f02d32BF629846e9b0626C",
+  "cirbtcPool": "0x0B62Acf3cF6BAa9501e01cBeE0aB1D3E74654837",
+  "scenarioPool": "0xA18279CfC93F71d808Cb8864D52427B51666EC5e",
+  "defaultTerms": {
+    "collateralBps": 15000,
+    "juniorFeeBps": 1000,
+    "creatorFeeBps": 100,
+    "epochSeconds": 2592000,
+    "exitDelay": 60,
+    "juniorNotice": 120
+  },
+  "transactions": [
+    {
+      "label": "scenarioOracle",
+      "hash": "0xd1d879314ee616ff6ed4160dd7d542984b8734c1e5140ca6c49385693d3b87bd",
+      "nonce": 0,
+      "blockNumber": "68018171",
+      "contractAddress": "0x23adba2644297979fcb943d1d54fb1f4deeb871a",
+      "gasUsed": "140881"
+    },
+    {
+      "label": "eurcOracle",
+      "hash": "0x8dee425b412be82d55f8661d3f2942d719c4d77591d590d10201201636a382c1",
+      "nonce": 1,
+      "blockNumber": "68018175",
+      "contractAddress": "0xbe38abae66175ce0a86f529b5d564f43186b1b0a",
+      "gasUsed": "686623"
+    },
+    {
+      "label": "cirbtcOracle",
+      "hash": "0xe99b199db622295cc90c3a1a118c57526f71fa374abff604b906246e7936e101",
+      "nonce": 2,
+      "blockNumber": "68018178",
+      "contractAddress": "0x7a460202e1f8b94f44ca92dfbc2421e2ae3749b6",
+      "gasUsed": "625781"
+    },
+    {
+      "label": "factory",
+      "hash": "0x01979a717027d9b78598038f68a0c611a28f07830713ae2ef25bccbf7f3ff4c7",
+      "nonce": 3,
+      "blockNumber": "68018182",
+      "contractAddress": "0x77dd612d711c5c3328c6a0eebcb9719955895e1c",
+      "gasUsed": "3925960"
+    },
+    {
+      "label": "factory-usdc-approve",
+      "hash": "0xf85e6a4cf7adbaf68333deafed5d2b0ddca4dcf9208547a6e54fc98daabd07a2",
+      "nonce": 4,
+      "blockNumber": "68018186",
+      "contractAddress": null,
+      "gasUsed": "55438"
+    },
+    {
+      "label": "eurcPool-factory-create",
+      "hash": "0xe241c23ce964720736683a13282561303d45443a8fb53b314e049d6375c7f95e",
+      "nonce": 5,
+      "blockNumber": "68018189",
+      "contractAddress": null,
+      "gasUsed": "2706611"
+    },
+    {
+      "label": "cirbtcPool-factory-create",
+      "hash": "0x68d556750dd87e8883f1523488596a111a220cd248e72c453e6eae4d366cc986",
+      "nonce": 6,
+      "blockNumber": "68018193",
+      "contractAddress": null,
+      "gasUsed": "2663678"
+    },
+    {
+      "label": "scenarioPool-factory-create",
+      "hash": "0xd5f6d72ac6f92a5adf4f1bb74bb0a0e8ad42fae306faaee1bf5b85394af746de",
+      "nonce": 7,
+      "blockNumber": "68018197",
+      "contractAddress": null,
+      "gasUsed": "2650047"
+    }
+  ],
   "funding": {
     "faucet": "https://faucet.circle.com",
     "network": "Arc Testnet",
@@ -54,5 +126,46 @@
     "journeyWalletFunded": "20 USDC and 20 EURC, checked on chain 19 October 2026 13:10 UTC",
     "blocker": "None at 13:35 UTC on 19 October 2026: the Chronicle feeds resumed at 13:20-13:25 UTC after a 28-hour outage. Pyth stays implemented but needs a Hermes API key (owner sign-up) and Arc testnet's Pyth contract was left out of Pyth's August upgrade.",
     "note": "Both wallets are dedicated test wallets created on 19 October 2026; their keys are only in the ignored .secrets/ directory."
+  },
+  "deploymentId": "arc-testnet-2026-10-19T13-33-11Z-5929f2",
+  "failedTransactions": [],
+  "source": {
+    "commit": "d48ec2656cbb07c83efa5a2d1402647175c2b01f",
+    "uncommitted": [],
+    "compiler": "0.8.35+commit.47b9dedd",
+    "artifacts": {
+      "ShieldOracles.sol:ShieldScenarioOracle": {
+        "bytecode": "0xf17a43ccdd35537508f838961dab136c62e0c2156050dfdc2db5167bccb8f2a9",
+        "deployedBytecode": "0x0328615e8833febb8f14164376285cff68eb3ba7b46bfb946a32f5f4261d43f5"
+      },
+      "ShieldOracles.sol:ShieldChronicleOracle": {
+        "bytecode": "0xc1dc38006557a1fcd12d31534e5af353ea07826ea07d41f16e3fa7de2a8ec6f9",
+        "deployedBytecode": "0xab423cd32f1137262e47494a1101c0023e422cb15e339a55a1d5b1fcb96b9f7c"
+      },
+      "ShieldPyth.sol:ShieldPythOracle": {
+        "bytecode": "0x3685e1a486c531c3422226d0212b0f99de639574b4151a5df88d6d2a8170b5be",
+        "deployedBytecode": "0x26b8e58871ddb785e31960a8fb9966d5479912c17bdc64726a6014a13ac6fb49"
+      },
+      "ShieldFactory.sol:ShieldFactory": {
+        "bytecode": "0xf554cab29685737143ee6ef37e290ebcbb4c63a9fac6cbf9a6bf636201b14d33",
+        "deployedBytecode": "0x3c6b90677dfb0536ec2139af7c6255c1844efda1357094a2bd511d1ff5ef5105"
+      },
+      "ShieldPool.sol:ShieldPool": {
+        "bytecode": "0x325add3fd82bb1e831dc6f437c1a85ece84b0a4aaab64e3cccf57ce886179d03",
+        "deployedBytecode": "0xdcfd38f565f0c5e5ebed7ef87f084d334fb3cfda58cda91f03319f89c434da83"
+      }
+    }
+  },
+  "verifiedAt": "2026-10-19T13:33:32.942Z",
+  "verification": {
+    "checkedAt": "2026-10-19T13:33:32.942Z",
+    "checks": [
+      "runtime code of 3 oracles, the factory and 3 pools matches contracts/out (immutables masked)",
+      "USDC (6), EURC (6) and cirBTC (8) identities",
+      "factory backing, protocol, assets, oracles and creation seed",
+      "reference adapters read the manifest's Chronicle feeds with the manifest's maxPriceAge and are whitelisted",
+      "3 featured markets: registered, USDC-backed, correct asset/oracle/unit/terms, open epochs, seeded by their creation receipts",
+      "8 recorded deployment receipts succeeded"
+    ]
   }
 }
