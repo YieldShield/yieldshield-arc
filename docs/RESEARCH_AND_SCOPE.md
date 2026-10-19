@@ -78,14 +78,14 @@ CCTP is not integrated in this prototype. The funded plan uses it for USDC exits
 |---|---|---|
 | **Chronicle** (push) | 66 oracles listed for Arc Testnet. Used here: EURC/USD `0x4640b2AF58f6Efc32b524C61e59C99d3845aD7C1`, USDC/USD `0x7fBe79354160a1C618015aa77c193CdE0FB29099`, CIRBTC/USDC `0xAd1C417C4bc9f037Fc61DC3fbDc999e501155960`. All report 18 decimals and need a whitelist ("toll"). The testnet SelfKisser `0xDecd203Ef38DEce4553Fc9fD5C570c26bD34B07F` is authorized on these oracles and lets any contract add itself | **Yes, with gaps** (see below) |
 | Chainlink | Data Feeds launched on **Arc mainnet** (changelog, 9 Sep 2026; 34 feeds, including EURC/USD `0x361b95c10b76Ca3f35C686d423e43A951755Bf23`, EUR/USD `0xDd5B15443cd733D3966a50a3E48cB7DF9Fb5DE0D`, USDC/USD `0x84EA90AC252Dc437031461836DB5164219147905`; heartbeat 86,400 s; mainnet EURC/USD read 1.12245, updated 19 Oct 01:06 UTC). Chainlink's own network list has **no Arc testnet entry** | Testnet: no. Mainnet: yes; the `ShieldChainlinkOracle` adapter is included and tested for that path |
-| Pyth (pull) | Arc testnet contract `0x2880aB155794e7179c9eE2e38200202908C17B43`. The last on-chain EUR/USD update was 22 Sep 2026; prices only move when a caller pushes a Hermes update | Only if every user transaction first pushes an update. Not used |
+| **Pyth** (pull) | Arc testnet contract `0x2880aB155794e7179c9eE2e38200202908C17B43` (see the 19 October afternoon update below). Prices only move when a caller pushes a Hermes update, and Hermes has required an API key since 26 August 2026 | **Chosen on 19 October afternoon**, gated on an API key and a compatibility check |
 | Stork (pull) | `0xacC0a0cF13571d30B4b8637996F5D6D774d4fd62` on both networks. BTCUSD and ETHUSD were last written 21 Jun 2026; EURUSD and USDCUSD are not registered (they revert with `NotFound`) | No |
 | RedStone | Listed on Arc's oracle page; no Arc testnet push feed was found | Not verified |
 
 **Chronicle reliability on testnet.** The explorer API returned 750 EURC/USD updates between 19 September and 18 October 2026:
 
 - The median update interval is 52 minutes, and the 99.5th percentile is 57 minutes.
-- There were two outages. One ran from 7 October 07:07 UTC to 8 October 17:11 UTC (about 34 hours). The other started on 18 October at 09:08 UTC, and all three feeds above were still stale when checked at 07:01 UTC on 19 October.
+- There were two outages. One ran from 7 October 07:07 UTC to 8 October 17:11 UTC (about 34 hours). The other started on 18 October at 09:08 UTC. All three feeds above were still stale at 07:01 UTC on 19 October, and again at 13:10 UTC, about 28 hours after their last update. The Chronicle testnet docs listed the same addresses and gave no notice.
 
 The adapter therefore uses `maxAge = 10,800 s` (3 hours, which tolerates two missed updates) and **fails closed**:
 
@@ -93,6 +93,62 @@ The adapter therefore uses `maxAge = 10,800 s` (3 hours, which tolerates two mis
 - **Backing exits** and matured settlement need no price, so they keep working. Settlement credits a fixed claim.
 
 No reference market ever falls back to the scenario price.
+
+### Update, 19 October afternoon: the reference oracle moves to Pyth
+
+**Decision (David, about 13:15 UTC).** Chronicle has been stale for about 28 hours, so the reference markets switch to Pyth. `ShieldChronicleOracle` stays in the repository as a tested option and can be redeployed if Chronicle resumes. Everything below was checked between 13:05 and 13:20 UTC.
+
+**Pyth on Arc testnet**
+
+| Fact | Value | Source |
+|---|---|---|
+| Contract | `0x2880aB155794e7179c9eE2e38200202908C17B43`, listed under "Chains not in the upgrade". Current address only; the "upgraded" column is "—" | Pyth EVM contract-address page |
+| Implementation | `PythUpgradable` at `0xA2aa501b19aff244D90cc15a4Cf739D2725B5729`, `version()` "1.4.5-alpha.1" | EIP-1967 slot and an on-chain read |
+| Update fee | `singleUpdateFeeInWei()` = 1. The fee is 1 wei of native USDC (10⁻¹⁸ USDC) per price in an update, so 3 wei for the three feeds used here. It is paid as `msg.value` to `updatePriceFeeds` | On-chain read |
+| `getValidTimePeriod()` | 60 s. Not used: the adapter passes its own age to `getPriceNoOlderThan` | On-chain read |
+| Pyth Pro (a different, subscription product) | `0xACeA…2dF481` on Arc mainnet and testnet | Pyth upgraded-contracts page |
+| Arc mainnet | No current Pyth Core contract; upgraded Core `0x8250…B1487a` | Pyth upgraded-contracts page |
+
+**Feed IDs (Hermes `/v2/price_feeds`).** All three are crypto feeds with a 24/7 schedule. The FX feed `FX.EUR/USD` (`0xa995d00b…ec30b`) closes at weekends, so it is not used.
+
+| Feed | ID | Use |
+|---|---|---|
+| Crypto.EURC/USD | `0x76fa85158bf14ede77087fe3ae472f66213f6ea2f5b411cb2de472794990fa5c` | EURC price |
+| Crypto.USDC/USD | `0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a` | Quote, so prices are in USDC rather than dollars |
+| Crypto.BTC/USD | `0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43` | cirBTC price |
+
+- **EURC** = EURC/USD ÷ USDC/USD.
+- **cirBTC** = BTC/USD ÷ USDC/USD. **Assumption:** cirBTC tracks BTC one to one. Pyth has no cirBTC feed. Circle describes cirBTC as wrapped Bitcoin, and Chainlink publishes a "cirBTC Reserves" feed on Arc mainnet but no cirBTC price feed. A depeg of cirBTC from BTC would not show in this price; this is listed as a risk.
+
+**Blockers found**
+
+1. **Hermes needs an API key.** Every price-update request failed with HTTP 401 "unauthorized", including:
+   - `https://hermes.pyth.network/v2/updates/price/latest`
+   - `/api/latest_vaas`
+   - `hermes-beta`
+   - the upgraded endpoint `https://pyth.dourolabs.app/hermes`
+   - Benchmarks
+
+   Only feed metadata (`/v2/price_feeds`) is public. Pyth's docs: "Pyth Core upgrade completed successfully on August 26, 2026. Hermes now requires an API Key." Keys come from Pyth Terminal (https://pythdata.app/signup, "a free trial is included, paid plans cover ongoing use") and go in an `Authorization: Bearer` header. Signing up is an owner-only step.
+2. **Compatibility on Arc testnet is unproven.**
+   - Arc testnet's contract was not part of the upgrade, and Pyth's docs say each endpoint's payloads "verify only on its own contract generation".
+   - On chain, a pusher updated this contract every minute until **26 August 2026, 16:15:56 UTC**, the cutover.
+   - A direct `updatePriceFeeds` on 4 September failed.
+   - The last successful updates came from a third-party app's own transactions on **22 September 2026** (BTC/USD published 07:16:39 UTC). Since then, other apps' reads of the contract have reverted.
+
+   Before any USDC is spent, the deploy preflight therefore simulates `updatePriceFeeds` with real Hermes data (`eth_call`, free). If the simulation fails, nothing is sent.
+
+**Adapter design (`ShieldPythOracle`)**
+
+- Reads `getPriceNoOlderThan(id, maxAge)` with **`maxAge = 120 s`**. This suits a pull model in which the caller pushes an update right before acting.
+- Rejects:
+  - non-positive prices;
+  - an exponent outside −18…0;
+  - zero confidence, or confidence wider than **1% of the price** (100 bps).
+- Scales both feeds to 18 decimals and returns base ÷ quote in USDC base units.
+- `age()` reports the age of the older feed value for monitoring.
+- Every action that reads the price is preceded by a separate `updatePriceFeeds{value: fee}` transaction: in the deploy script, the journey and the app.
+- Stale prices still fail closed, exactly as with Chronicle. Backing exits and settlement need no price.
 
 ### Price units
 
@@ -120,7 +176,7 @@ The adapter normalizes from 18 decimals to 6, rejects zero values, future timest
 |---|---|---|
 | Backing | **Real Arc testnet USDC** (ERC-20 interface, 6 decimals) | It is Arc's settlement asset. No project-issued "demo dollar" exists in this repository |
 | Protected assets | **EURC** (6 decimals) and **cirBTC** (8 decimals) | Both are Circle-issued and available from Circle's faucet. EURC gives an FX market against USDC; cirBTC gives a volatile market. The pool core generalizes to any decimals from 6 to 18 |
-| Reference oracle | **Chronicle** through `ShieldChronicleOracle` (EURC/USD ÷ USDC/USD; CIRBTC/USDC), max age 3 hours | The only push feeds found live on Arc testnet. Outages are documented and fail closed |
+| Reference oracle | **Pyth** through `ShieldPythOracle` (EURC/USD ÷ USDC/USD; BTC/USD ÷ USDC/USD), max age 120 s, confidence ≤ 1%; each price-reading action is preceded by an `updatePriceFeeds` transaction. Changed on 19 October afternoon from Chronicle (`ShieldChronicleOracle`, max age 3 hours), which stays as a tested option | Chronicle's Arc testnet feeds were stale for about 28 hours. Pyth needs a Hermes API key and a passing compatibility simulation before deployment |
 | Scenario market | EURC priced by `ShieldScenarioOracle`, a public deterministic cycle of 1.10 → 1.20 → 1.00 USDC per EURC, changing every 120 s | Exercises both exits on demand. Labelled as synthetic everywhere and never used as a fallback |
 | Mainnet oracle path | `ShieldChainlinkOracle` (Chainlink EURC/USD and USDC/USD on Arc mainnet) | Built and tested; not deployed on testnet |
 | Featured markets | EURC reference, cirBTC reference, EURC scenario | Three markets, each seeded through the factory with 5 USDC |
@@ -147,4 +203,5 @@ The pool's economic rules are **unchanged** from the template: fixed entry claim
 - Arc mainnet launch: https://www.theblock.co/news/ecosystems/2026-09-16-circle-launches-arc-mainnet-with-blackrock-and-visa-among-validators-mints-10-billion-arc-tokens-415250
 - Circle Developer Grants: https://www.circle.com/grant, https://circle.questbook.app/, https://community.arc.io/home/blogs/circle-developer-grants-program-relaunches-2026-05-14, https://www.circle.com/blog/announcing-the-first-circle-grant-recipients-in-2026
 - Arc Builders Fund (venture, not a grant): https://www.circle.com/blog/introducing-the-arc-builders-fund
-- On-chain reads: `cast` against `https://rpc.testnet.arc.io` and `https://rpc.mainnet.arc.io`; Chronicle update history from `https://explorer.testnet.arc.io/api/v2/addresses/<oracle>/logs`
+- Pyth Core upgrade and API keys: https://docs.pyth.network/price-feeds/core/upgrade, https://docs.pyth.network/price-feeds/core/upgrade/preparing, https://docs.pyth.network/price-feeds/core/upgrade/contracts; Hermes feed metadata: https://hermes.pyth.network/v2/price_feeds
+- On-chain reads: `cast` against `https://rpc.testnet.arc.io` and `https://rpc.mainnet.arc.io`; Chronicle and Pyth update history from `https://explorer.testnet.arc.io/api/v2/addresses/<contract>/logs` and `/transactions`
