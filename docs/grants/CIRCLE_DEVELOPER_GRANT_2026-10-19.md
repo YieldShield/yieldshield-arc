@@ -275,7 +275,7 @@ Capped Arc mainnet release after a separately funded audit and legal review | US
 **Audit findings so far** (limit 500)
 
 ```
-N/A. No internal or third-party audit has been conducted. The repository has 60 Foundry tests (5 fuzz) and a rehearsed deployment; these are not an audit. A capped mainnet release waits for an independent audit.
+N/A. No internal or third-party audit has been conducted. The code was developed with substantial AI assistance (AI agents are tools, not team members) and is reviewed by the founders. It has 60 Foundry tests (5 fuzz) and a rehearsed deployment; these are not an audit. A capped mainnet release waits for an independent audit.
 ```
 
 ### Deck and demo
