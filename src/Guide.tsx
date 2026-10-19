@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { PageTitle, RouteLink, Facts, Risk } from "./ui";
 export function Guide() {
-  const [move, setMove] = useState(20);
-  const entry = 250,
+  const [move, setMove] = useState(10);
+  // 100 EURC at an entry price of 1.10 USDC: a 110 USDC entry claim.
+  const entry = 110,
     spot = entry * (1 + move / 100),
     gain = Math.max(spot - entry, 0),
     fee = gain * 0.12;
@@ -18,10 +19,11 @@ export function Guide() {
           <div className="eyebrow">01 / HOLDER</div>
           <h2>Choose your exit.</h2>
           <p>
-            Deposit an asset at the market price. After the exit delay, withdraw
-            part or all of the asset and pay gain fees, or surrender that slice
-            for its proportional backing claim. Ownership can be transferred
-            with its original basis and maturity.
+            Deposit EURC or cirBTC at the reference price; your entry claim is
+            fixed in USDC. After the exit delay, withdraw part or all of the
+            asset and pay fees only on realized gains, or surrender that slice
+            for its proportional USDC claim. Ownership can be transferred with
+            its original basis and maturity.
           </p>
           <RouteLink to="/protect">Open protection ↗</RouteLink>
         </article>
@@ -29,10 +31,10 @@ export function Guide() {
           <div className="eyebrow">02 / CAPITAL PROVIDER</div>
           <h2>Back the downside.</h2>
           <p>
-            Deposit aDEMO or backing-vault receipts into a market. Positive
-            asset exits create independently claimable fees. Backing exits
-            consume your collateral and leave you the surrendered asset.
-            Redemption returns a basket of backing and asset inventory.
+            Deposit USDC into a market. Positive asset exits create
+            independently claimable fees. Backing exits consume your USDC and
+            leave you the surrendered asset. Redemption returns a basket of
+            USDC and asset inventory.
           </p>
           <RouteLink to="/provide">Provide capital ↗</RouteLink>
         </article>
@@ -42,9 +44,9 @@ export function Guide() {
           <div className="eyebrow">ILLUSTRATION / NOT A LIVE QUOTE</div>
           <h2>Walk through the outcome.</h2>
           <p>
-            Example: 10 asset units, entry price 25 aDEMO, default 10% provider
-            + 1% creator + 1% protocol fee on gains. This slider does not move
-            an oracle or send a transaction.
+            Example: 100 EURC, entry price 1.10 USDC, default 10% provider + 1%
+            creator + 1% protocol fee on gains. This slider does not move an
+            oracle or send a transaction.
           </p>
           <label htmlFor="movement">
             Price move{" "}
@@ -56,32 +58,32 @@ export function Guide() {
           <input
             id="movement"
             type="range"
-            min="-80"
-            max="100"
+            min="-30"
+            max="30"
             value={move}
             onChange={(e) => setMove(Number(e.target.value))}
           />
           <div className="range-labels">
-            <span>−80%</span>
-            <span>+100%</span>
+            <span>−30%</span>
+            <span>+30%</span>
           </div>
         </div>
         <div className="scenario-results">
           <Facts
             items={[
-              ["Asset value at selected price", `${spot.toFixed(2)} aDEMO`],
+              ["Asset value at selected price", `${spot.toFixed(2)} USDC`],
               [
                 "Asset exit value after gain fees",
-                `${(spot - fee).toFixed(2)} aDEMO`,
+                `${(spot - fee).toFixed(2)} USDC`,
               ],
-              ["Backing exit claim", "250.00 aDEMO"],
+              ["Backing exit claim", "110.00 USDC"],
               [
                 "Providers’ gain fee",
-                `${(gain * 0.1).toFixed(2)} aDEMO equivalent`,
+                `${(gain * 0.1).toFixed(2)} USDC equivalent`,
               ],
               [
                 "Providers’ surrendered-asset loss on backing exit",
-                `${Math.max(entry - spot, 0).toFixed(2)} aDEMO equivalent`,
+                `${Math.max(entry - spot, 0).toFixed(2)} USDC equivalent`,
               ],
             ]}
           />
@@ -108,11 +110,13 @@ export function Guide() {
           preserves the remainder. Gain fees apply only to the withdrawn slice.
           Remaining protection keeps its original opening time and maturity.
         </p>
-        <h2>What is a vault-backed floor?</h2>
+        <h2>What happens when the price is stale?</h2>
         <p>
-          A bvaDEMO-backed position promises a number of vault receipts. The
-          underlying aDEMO those receipts redeem for can change. There is no
-          fixed dollar guarantee, and bvaDEMO is not a stablecoin.
+          Reference markets read Chronicle feeds on Arc testnet and reject any
+          value older than three hours. While a feed is stale, new protection
+          and asset exits revert; backing exits and maturity settlement need no
+          price and keep working. No reference market ever falls back to the
+          scenario price.
         </p>
       </div>
     </>
@@ -124,21 +128,23 @@ export function Legal() {
       <PageTitle
         eyebrow="TERMS & RISKS"
         title="An experiment with clear limits."
-        description="Alpine is an unaudited, valueless testnet prototype. It is not insurance, a guaranteed return or a production investment product."
+        description="YieldShield Arc is an unaudited Arc testnet prototype with valueless test tokens. Providers can lose capital, a holder's claim is only as good as the USDC reserved in the contract, and no return is promised."
       />
       <div className="field-note">
         <h2>Use test assets only</h2>
         <p>
-          All contracts are gated to Fuji or local test chains. aDEMO, awAVAX,
-          vaDEMO and bvaDEMO are Alpine test assets. Nothing here represents
-          Circle USDC, BENQI sAVAX, canonical WAVAX or redeemable dollars.
+          All contracts are gated to Arc testnet (chain 5042002) or a local test
+          chain. They use Circle&apos;s testnet USDC, EURC and cirBTC, which
+          have no monetary value and are not redeemable. Nothing here is
+          deployed on Arc mainnet or holds real funds.
         </p>
         <h2>Economic and technical risks</h2>
         <p>
           Providers may lose their backing. Holder protection is limited to a
-          fixed token-unit claim and depends on contract correctness. Oracle
-          prices may be unavailable or stale; an asset exit can fail while a
-          backing claim remains possible. Smart-contract errors, wallet errors
+          fixed USDC claim and depends on contract correctness and on the
+          backing actually reserved. Oracle prices may be unavailable or stale;
+          an asset exit can fail while a backing claim remains possible. USDC
+          transfers to or from blocklisted addresses revert on Arc. Smart-contract errors, wallet errors
           and network interruptions are possible. At maturity, forced settlement
           forfeits remaining asset upside.
         </p>

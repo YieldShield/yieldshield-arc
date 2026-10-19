@@ -6,17 +6,17 @@ import { decodeEventLog, formatUnits, isAddress, type Address } from "viem";
 import {
   assets,
   read,
-  client,
   poolAbi,
   oracleAbi,
   fmt,
   units,
-  DEFAULT_TERMS,
-  explorer,
   short,
   walletProvider,
   chainTimestamp,
   chainDeadline,
+  config,
+  BACKING,
+  GAS_RESERVE,
 } from "./chain";
 import { useShield, type Snapshot, type Position } from "./state";
 import {
@@ -30,7 +30,7 @@ import {
   RouteLink,
   Empty,
 } from "./ui";
-import { minimumOutput, safeError } from "./math.mjs";
+import { minimumOutput, safeError, spendableUsdc } from "./math.mjs";
 type Quote = {
   assertCurrent: () => void;
   amount: bigint;
@@ -73,15 +73,14 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
   const guard = useReviewGuard([amount, market.key, identity, role]);
   const asset = assets.find((a) => a.key === market.asset)!;
   const provider = role === "provide",
-    symbol = provider ? market.backingSymbol : asset.symbol;
-  const balance =
-    balances[
-      provider
-        ? market.backingSymbol === "bvaDEMO"
-          ? "backing-vault"
-          : "backing"
-        : market.asset
-    ];
+    symbol = provider ? BACKING.symbol : asset.symbol,
+    decimals = provider ? BACKING.decimals : asset.decimals;
+  const balance = balances[provider ? "usdc" : market.asset];
+  // USDC is Arc's gas token, so a provider can deposit at most the balance minus a gas reserve.
+  const spendable =
+    provider && balance !== undefined
+      ? spendableUsdc(balance, GAS_RESERVE)
+      : balance;
   useEffect(() => {
     setQuote(null);
     setSuccess(null);
@@ -99,9 +98,20 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
     try {
       if (!account || !market.address)
         throw new Error("Connect your wallet to a deployed market.");
-      const n = units(amount, provider ? 6 : 18);
+      const n = units(amount, decimals);
       if (balance !== undefined && n > balance)
         throw new Error("Amount exceeds your available balance.");
+      if (provider && spendable !== undefined && n > spendable)
+        throw new Error(
+          "Keep at least 0.1 USDC unspent: USDC also pays Arc's network fees.",
+        );
+      if (
+        balances.native !== undefined &&
+        balances.native < GAS_RESERVE * 10n ** 12n
+      )
+        throw new Error(
+          "This wallet needs testnet USDC for network fees. Get it from Circle's faucet first.",
+        );
       const [reserve, maturity] = await Promise.all(
         ["reservedBacking", "maturity"].map((name) =>
           read(market.address!, poolAbi, name),
@@ -124,10 +134,10 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
       } else {
         const oracle = await read(market.address, poolAbi, "oracle");
         const price = await read(oracle, oracleAbi, "price");
-        out = (n * price) / 10n ** 18n;
+        out = (n * price) / 10n ** BigInt(asset.decimals);
         if (out < 10_000n)
           throw new Error(
-            `The entry claim must be at least 0.01 ${market.backingSymbol}. Increase the amount.`,
+            "The entry claim must be at least 0.01 USDC. Increase the amount.",
           );
         const [capacity, openIds] = await Promise.all(
           ["capacity", "openPositionIds"].map((name) =>
@@ -171,29 +181,21 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
       consumeReview(quote.assertCurrent);
       setQuote(null);
       await valid(quote);
-      if (provider || asset.address) {
-        const token = provider ? market.backing : asset.address;
-        if (token && token !== "0x0000000000000000000000000000000000000000")
-          await approve(token, market.address, quote.amount);
-      }
+      await approve(
+        provider ? config.usdc : asset.address,
+        market.address,
+        quote.amount,
+      );
       assertCurrent();
       quote.assertCurrent();
       await valid(quote);
       const receipt = await transact(
-        provider ? "Provide capital" : "Protect asset",
+        provider ? "Provide capital" : `Protect ${asset.symbol}`,
         market.address,
         poolAbi,
-        provider
-          ? "depositJuniorBounded"
-          : market.asset === "native"
-            ? "protect"
-            : "protectToken",
-        provider
-          ? [quote.amount, quote.minimum, quote.deadline]
-          : market.asset === "native"
-            ? [quote.minimum, quote.deadline]
-            : [quote.amount, quote.minimum, quote.deadline],
-        !provider && market.asset === "native" ? quote.amount : undefined,
+        provider ? "depositJuniorBounded" : "protect",
+        [quote.amount, quote.minimum, quote.deadline],
+        undefined,
         quote.assertCurrent,
       );
       let path = `/positions?pool=${market.key}`;
@@ -229,7 +231,7 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
         description={
           provider
             ? "Back a market for a share of gain fees. Your capital carries the downside."
-            : "Choose an asset and backing token, then review your entry claim."
+            : "Choose a market, then review your fixed entry claim in USDC."
         }
       />
       <div className="market-grid">
@@ -272,15 +274,15 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
                 onChange={setAmount}
                 symbol={symbol}
                 max={
-                  balance !== undefined
-                    ? formatUnits(balance, provider ? 6 : 18)
+                  spendable !== undefined
+                    ? formatUnits(spendable, decimals)
                     : undefined
                 }
               />
               <p className="amount-help">
                 Balance:{" "}
                 {balance !== undefined
-                  ? `${fmt(balance, provider ? 6 : 18, 6)} ${symbol}`
+                  ? `${fmt(balance, decimals, 8)} ${symbol}`
                   : "Connect to read balance"}
               </p>
               {quote ? (
@@ -289,15 +291,15 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
                     items={[
                       [
                         "You deposit",
-                        `${formatUnits(quote.amount, provider ? 6 : 18)} ${symbol}`,
+                        `${formatUnits(quote.amount, decimals)} ${symbol}`,
                       ],
                       [
                         provider ? "Provider shares" : "Entry claim",
-                        `${formatUnits(quote.output, provider ? 18 : 6)} ${provider ? "shares" : market.backingSymbol}`,
+                        `${formatUnits(quote.output, provider ? 18 : 6)} ${provider ? "shares" : "USDC"}`,
                       ],
                       [
                         "Minimum accepted (0.5% tolerance)",
-                        `${formatUnits(quote.minimum, provider ? 18 : 6)} ${provider ? "shares" : market.backingSymbol}`,
+                        `${formatUnits(quote.minimum, provider ? 18 : 6)} ${provider ? "shares" : "USDC"}`,
                       ],
                       [
                         "Review expires",
@@ -343,11 +345,12 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
           <Facts
             items={[
               ["Protected asset", asset.symbol],
-              ["Backing", market.backingSymbol],
+              ["Backing", "USDC (Arc testnet)"],
+              ["Price source", market.source],
               [
                 "Available entry claims",
                 s
-                  ? `${fmt(s.capacity)} ${market.backingSymbol}`
+                  ? `${fmt(s.capacity)} USDC`
                   : ready
                     ? "Unavailable"
                     : "Awaiting deployment",
@@ -378,13 +381,13 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
               ],
             ]}
           />
-          <Risk provider={provider} backing={market.backingSymbol} />
+          <Risk provider={provider} synthetic={market.synthetic} />
           <div className="button-row">
             <RouteLink
               className="secondary-button"
-              to={`/trade?pool=${market.key}&asset=${market.asset}&amount=${encodeURIComponent(amount)}&return=${role}${provider && market.backingSymbol === "bvaDEMO" ? "&convert=deposit-backing" : ""}`}
+              to={`/faucet?pool=${market.key}&asset=${provider ? "usdc" : market.asset}&amount=${encodeURIComponent(amount)}&return=${role}`}
             >
-              Get an asset
+              Get test {symbol}
             </RouteLink>
             <RouteLink className="secondary-button" to="/create-pool">
               Create fresh market
@@ -439,7 +442,7 @@ export function Positions() {
           }
         >
           {!ready
-            ? "Position tracking becomes live after Fuji deployment."
+            ? "Position tracking becomes live after the Arc testnet deployment."
             : "Open protection or provide backing in an available market."}
         </Empty>
       ) : null}
@@ -448,12 +451,10 @@ export function Positions() {
           <article key={`${m.key}:${p.id}`}>
             <div className="eyebrow">HOLDER / {m.name}</div>
             <h2>
-              {fmt(p.amount, 18, 8)}{" "}
+              {fmt(p.amount, assets.find((a) => a.key === m.asset)!.decimals, 8)}{" "}
               {assets.find((a) => a.key === m.asset)!.symbol}
             </h2>
-            <p>
-              Remaining entry claim: {fmt(p.floor)} {m.backingSymbol}
-            </p>
+            <p>Remaining entry claim: {fmt(p.floor)} USDC</p>
             <RouteLink
               className="hero-link"
               to={`/positions/${m.key}:${p.id}?pool=${m.key}`}
@@ -474,7 +475,7 @@ export function PositionDetail() {
   const [routeParams] = useSearchParams();
   const split = key.lastIndexOf(":");
   const marketKey =
-      split < 0 ? routeParams.get("pool") || "reference" : key.slice(0, split),
+      split < 0 ? routeParams.get("pool") || "eurc" : key.slice(0, split),
     id = key.slice(split + 1);
   const { markets, snapshots, account, identity, transact, chainTime } =
     useShield();
@@ -538,7 +539,7 @@ export function PositionDetail() {
         });
         return;
       }
-      const n = units(amount);
+      const n = units(amount, asset.decimals);
       if (n > p.amount) throw new Error("Amount exceeds position.");
       let output: bigint;
       if (mode === "asset") {
@@ -602,11 +603,11 @@ export function PositionDetail() {
       <div className="market-grid">
         <section className="market-card">
           <h2>
-            {fmt(p.amount, 18, 8)} {asset.symbol}
+            {fmt(p.amount, asset.decimals, 8)} {asset.symbol}
           </h2>
           <Facts
             items={[
-              ["Entry claim", `${fmt(p.floor, 6, 6)} ${m.backingSymbol}`],
+              ["Entry claim", `${fmt(p.floor, 6, 6)} USDC`],
               ["Owner", short(p.owner)],
               [
                 "Asset exit available",
@@ -622,7 +623,7 @@ export function PositionDetail() {
               ],
             ]}
           />
-          <Risk backing={m.backingSymbol} />
+          <Risk synthetic={m.synthetic} />
         </section>
         <section className="action-card">
           <h2>Manage protection</h2>
@@ -664,7 +665,7 @@ export function PositionDetail() {
                     {v === "asset"
                       ? `Exit ${asset.symbol}`
                       : v === "backing"
-                        ? `Exit ${m.backingSymbol}`
+                        ? "Exit to USDC"
                         : "Transfer"}
                   </button>
                 ))}
@@ -687,7 +688,7 @@ export function PositionDetail() {
                   onChange={setAmount}
                   symbol={asset.symbol}
                   label="Amount to exit"
-                  max={formatUnits(p.amount, 18)}
+                  max={formatUnits(p.amount, asset.decimals)}
                 />
               )}
               <p className="muted-text">
@@ -703,7 +704,7 @@ export function PositionDetail() {
                         mode === "transfer" ? "New owner" : "Minimum received",
                         mode === "transfer"
                           ? recipient
-                          : `${formatUnits(q.minimum, mode === "asset" ? 18 : 6)} ${mode === "asset" ? asset.symbol : m.backingSymbol}`,
+                          : `${formatUnits(q.minimum, mode === "asset" ? asset.decimals : 6)} ${mode === "asset" ? asset.symbol : "USDC"}`,
                       ],
                       ["Price tolerance", "0.5% maximum reduction"],
                     ]}
@@ -744,7 +745,7 @@ export function ProviderPosition({ marketKey }: { marketKey: string }) {
   useEffect(() => setQ(null), [amount, identity, marketKey]);
   const guard = useReviewGuard([amount, identity, marketKey]);
   if (!s || !account) return null;
-  const symbol = assets.find((a) => a.key === m.asset)!.symbol;
+  const { symbol, decimals } = assets.find((a) => a.key === m.asset)!;
   async function action(name: string, label: string, args: unknown[] = []) {
     try {
       await transact(label, m.address!, poolAbi, name, args);
@@ -757,7 +758,7 @@ export function ProviderPosition({ marketKey }: { marketKey: string }) {
     setError("");
     const assertCurrent = guard();
     try {
-      const n = units(amount);
+      const n = units(amount, 18);
       const [out, asset] = await read(
         m.address!,
         poolAbi,
@@ -810,12 +811,9 @@ export function ProviderPosition({ marketKey }: { marketKey: string }) {
       <h2>{fmt(s.ownShares, 18, 8)} provider shares</h2>
       <Facts
         items={[
-          ["Earned gain fees", `${fmt(s.earned, 18, 10)} ${symbol}`],
-          ["Creator / protocol fees", `${fmt(s.fees, 18, 10)} ${symbol}`],
-          [
-            "Matured backing credit",
-            `${fmt(s.claimable, 6, 6)} ${m.backingSymbol}`,
-          ],
+          ["Earned gain fees", `${fmt(s.earned, decimals, 10)} ${symbol}`],
+          ["Creator / protocol fees", `${fmt(s.fees, decimals, 10)} ${symbol}`],
+          ["Matured backing credit", `${fmt(s.claimable, 6, 6)} USDC`],
           [
             "Withdrawal notice",
             s.ready
@@ -890,13 +888,10 @@ export function ProviderPosition({ marketKey }: { marketKey: string }) {
             <>
               <Facts
                 items={[
-                  [
-                    "Minimum backing",
-                    `${formatUnits(q.minimum, 6)} ${m.backingSymbol}`,
-                  ],
+                  ["Minimum backing", `${formatUnits(q.minimum, 6)} USDC`],
                   [
                     "Minimum surrendered asset",
-                    `${formatUnits(q.secondaryMinimum || 0n, 18)} ${symbol}`,
+                    `${formatUnits(q.secondaryMinimum || 0n, decimals)} ${symbol}`,
                   ],
                 ]}
               />

@@ -9,15 +9,16 @@ export function Markets({ home = false }: { home?: boolean }) {
       {home ? (
         <section className="hero">
           <div>
-            <div className="eyebrow">YIELDSHIELD / AVALANCHE FIELD STATION</div>
+            <div className="eyebrow">YIELDSHIELD / ARC TESTNET</div>
             <h1>
-              Explore the upside.
+              Keep the upside.
               <br />
-              <em>Define your floor.</em>
+              <em>Fix your floor in USDC.</em>
             </h1>
             <p>
-              Protect your assets or provide the capital behind them. Three test
-              assets. Two forms of backing.
+              Protect Circle EURC or cirBTC against a fixed USDC claim, or
+              provide the USDC behind it. Testnet only; test tokens have no
+              monetary value.
             </p>
             <div className="button-row">
               <RouteLink className="secondary-button" to="/protect">
@@ -28,20 +29,17 @@ export function Markets({ home = false }: { home?: boolean }) {
               </RouteLink>
             </div>
           </div>
-          <div className="mountain-art" aria-hidden>
+          <div className="hero-art" aria-hidden>
             <svg viewBox="0 0 500 330">
-              <path d="M0 300 145 125 230 235 335 35 500 300Z" fill="#d9e7d8" />
-              <path d="m145 125 85 110 105-200 165 265H230Z" fill="#b3cfb8" />
-              <path d="m335 35-35 71 36-18 22 18Z" fill="#fffefa" />
-              <path d="M0 300 125 200 245 300 320 190 500 300" fill="#729e80" />
-              <path d="M0 310h500" stroke="#294d36" />
-              <path
-                d="M335 35v-26l35 10-35 7"
-                fill="#ef775d"
-                stroke="#526f51"
-              />
+              <path d="M40 300a210 210 0 0 1 420 0" fill="#d9e7d8" />
+              <path d="M110 300a140 140 0 0 1 280 0" fill="#b3cfb8" />
+              <path d="M180 300a70 70 0 0 1 140 0" fill="#729e80" />
+              <path d="M20 300h460" stroke="#294d36" strokeWidth="2" />
+              <path d="M70 318h360" stroke="#ef775d" strokeWidth="10" />
             </svg>
-            <span className="altitude">46° 51′ N · THE ALPINE EXPERIMENT</span>
+            <span className="hero-caption">
+              CHAIN 5042002 · USDC AS GAS AND BACKING
+            </span>
           </div>
         </section>
       ) : (
@@ -66,11 +64,12 @@ export function Markets({ home = false }: { home?: boolean }) {
         ))}
       </div>
       <details className="field-note help-details">
-        <summary>What backs these test assets?</summary>
+        <summary>Which assets are these?</summary>
         <p>
-          All assets are valueless test tokens. awAVAX wraps actual Fuji AVAX;
-          vaDEMO and bvaDEMO represent funded aDEMO vault deposits. sAVAX and
-          Circle USDC are research references only and cannot be deposited here.
+          Circle-issued testnet tokens on Arc: USDC (backing and gas), EURC and
+          cirBTC (protected assets). Get them from Circle&apos;s faucet. They
+          have no monetary value. The scenario market uses real testnet EURC
+          with a synthetic, clearly labelled price.
         </p>
         <RouteLink className="hero-link" to="/how-it-works">
           Read the field guide ↗
@@ -99,7 +98,7 @@ export function PoolDetail() {
       <PageTitle
         eyebrow="MARKET DETAILS"
         title={market.name}
-        description={`${asset.symbol} protected with ${market.backingSymbol} collateral. ${market.source}.`}
+        description={`${asset.symbol} protected by USDC backing. ${market.source}.`}
       />
       <div className="market-grid">
         <MarketCard market={market} headingLevel={2} />
@@ -160,7 +159,7 @@ export function PoolDetail() {
               ],
               [
                 "Remaining backing",
-                s ? `${fmt(s.backing)} ${market.backingSymbol}` : "Unavailable",
+                s ? `${fmt(s.backing)} USDC` : "Unavailable",
               ],
               ["Open positions", s?.positions.length ?? "Unavailable"],
             ]}
@@ -180,8 +179,8 @@ export function PoolDetail() {
           )}
         </article>
       </div>
-      <Risk backing={market.backingSymbol} />
-      <Risk provider backing={market.backingSymbol} />
+      <Risk synthetic={market.synthetic} />
+      <Risk provider />
       <div className="button-row">
         <RouteLink
           className="secondary-button"

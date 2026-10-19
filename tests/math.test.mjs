@@ -1,28 +1,50 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  entryClaim,
   exitPreview,
   maxNewFloor,
   minimumOutput,
   safeError,
-  WAD,
+  spendableUsdc,
+  unitOf,
 } from "../src/math.mjs";
-test("exits use only realized positive gains and precise units", () => {
-  assert.deepEqual(exitPreview(WAD, 25_000000n, 50_000000n), {
-    avaxOut: 940000000000000000n,
-    fee: 60000000000000000n,
-    backingOut: 25_000000n,
+const EURC = unitOf(6),
+  CIRBTC = unitOf(8);
+test("exits use only realized positive gains and the asset's own unit", () => {
+  // 100 EURC entered at 1.10 USDC; the price doubles, so half the EURC is gain and 12% of it is fee.
+  assert.deepEqual(exitPreview(100_000000n, 110_000000n, 2_200000n, EURC), {
+    assetOut: 94_000000n,
+    fee: 6_000000n,
+    backingOut: 110_000000n,
   });
-  assert.equal(exitPreview(WAD, 25_000000n, 15_000000n).fee, 0n);
+  assert.equal(exitPreview(100_000000n, 110_000000n, 1_000000n, EURC).fee, 0n);
+  // 0.001 cirBTC with the same doubling: 12% of 50,000 sats.
+  assert.equal(
+    exitPreview(100000n, 81_827183n, 163654_367416n, CIRBTC).fee,
+    6000n,
+  );
+});
+test("entry claims are priced per whole asset unit", () => {
+  assert.equal(entryClaim(100_000000n, 1_100000n, EURC), 110_000000n);
+  assert.equal(entryClaim(100000n, 81827_183708n, CIRBTC), 81_827183n);
+  // 12 sats fall below the 0.01 USDC minimum claim; 13 sats do not.
+  assert.ok(entryClaim(12n, 81827_183708n, CIRBTC) < 10_000n);
+  assert.ok(entryClaim(13n, 81827_183708n, CIRBTC) >= 10_000n);
+  assert.throws(() => entryClaim(1n, 0n, EURC));
 });
 test("entry capacity is conservative under rounding", () => {
   assert.equal(maxNewFloor(1000_000000n, 100_000000n), 566666666n);
   assert.equal(maxNewFloor(100_000000n, 100_000000n), 0n);
+  assert.equal(maxNewFloor(5_000000n, 0n), 3333333n);
+});
+test("USDC deposits leave the gas reserve unspent", () => {
+  assert.equal(spendableUsdc(20_000000n, 100000n), 19_900000n);
+  assert.equal(spendableUsdc(50000n, 100000n), 0n);
 });
 test("invalid price cannot silently become a live quote", () => {
-  assert.throws(() => exitPreview(WAD, 25_000000n, 0n));
+  assert.throws(() => exitPreview(1_000000n, 1_100000n, 0n, EURC));
 });
-
 test("tiny quotes cannot lose more than the stated half percent", () => {
   assert.equal(minimumOutput(2n), 2n);
   assert.equal(minimumOutput(199n), 199n);
@@ -59,6 +81,10 @@ test("decoded contract errors become plain sentences", () => {
       cause: { cause: { data: { errorName: "ERC20InsufficientBalance" } } },
     }),
     "Your token balance is too low for this transaction.",
+  );
+  assert.match(
+    safeError({ cause: { reason: "INVALID_OR_STALE_PRICE" } }),
+    /stale or unavailable.*Backing exits still work/,
   );
   assert.equal(
     safeError({ shortMessage: "User rejected the request." }),

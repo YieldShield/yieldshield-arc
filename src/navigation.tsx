@@ -5,7 +5,7 @@ const routeNames: Record<string, string> = {
   "/markets": "Markets",
   "/protect": "Protect assets",
   "/provide": "Provide capital",
-  "/trade": "Trade & convert",
+  "/agents": "Agents",
   "/positions": "My positions",
   "/portfolio": "Portfolio",
   "/activity": "Activity",
@@ -40,7 +40,7 @@ export function RouteOrientation() {
     navigationType = useNavigationType();
   const previous = useRef(location.pathname);
   useEffect(() => {
-    document.title = `${routeName(location.pathname)} · YieldShield Alpine`;
+    document.title = `${routeName(location.pathname)} · YieldShield Arc`;
     const changed = previous.current !== location.pathname;
     previous.current = location.pathname;
     if (!changed && !location.hash) return;

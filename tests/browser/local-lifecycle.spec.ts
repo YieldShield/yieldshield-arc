@@ -1,19 +1,39 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { createPublicClient, http, encodeFunctionData, parseAbi } from "viem";
+/** Local-only: needs Anvil on 8567, `node scripts/local-journey.mjs --browser-ready` and `node scripts/local-web.mjs`. */
 const enabled = process.env.SHIELD_LOCAL_E2E === "1";
-test("local signed browser journey: faucet → provider → funded buy → protect → partial exit → claim", async ({
-  page,
-}) => {
-  test.skip(!enabled, "Explicit local-only chain setup required.");
-  test.setTimeout(180000);
+const RPC = "http://127.0.0.1:8567";
+const WEB = "http://127.0.0.1:5204";
+const chronicle = parseAbi(["function set(uint256 value, uint256 updatedAt)"]);
+async function setup(page: Page, accountIndex: number) {
   const m = JSON.parse(readFileSync(".local/deployment.json", "utf8"));
-  const rpc = createPublicClient({ transport: http("http://127.0.0.1:8547") });
+  const rpc = createPublicClient({ transport: http(RPC) });
   expect(await rpc.getChainId()).toBe(31337);
   const accounts = (await rpc.request({
     method: "eth_accounts",
   } as any)) as string[];
-  const account = accounts[2];
+  const account = accounts[accountIndex];
+  const send = async (to: string, data: `0x${string}`) =>
+    rpc.request({
+      method: "eth_sendTransaction",
+      params: [{ from: accounts[0], to, data }],
+    } as any);
+  /** Moves a local Chronicle stand-in, stamped with the latest chain time so it stays fresh. */
+  const setFeed = async (feed: string, value: bigint) => {
+    const { timestamp } = await rpc.getBlock();
+    await send(
+      feed,
+      encodeFunctionData({
+        abi: chronicle,
+        functionName: "set",
+        args: [value, timestamp],
+      }),
+    );
+  };
+  await setFeed(m.chronicle.eurcUsd, 1_100000000000000000n);
+  await setFeed(m.chronicle.usdcUsd, 1_000000000000000000n);
+  await setFeed(m.chronicle.cirbtcUsdc, 81827_183708000000000000n);
   await page.exposeFunction("__walletRpc", async (request: any) => {
     if (
       request.method === "eth_requestAccounts" ||
@@ -31,43 +51,33 @@ test("local signed browser journey: faucet → provider → funded buy → prote
       removeListener: () => {},
     };
   });
-  await page.goto("http://127.0.0.1:5184/faucet");
+  return { m, rpc, setFeed };
+}
+test("local signed browser journey: provide USDC → protect EURC → gain exit → claim fees", async ({
+  page,
+}) => {
+  test.skip(!enabled, "Explicit local-only chain setup required.");
+  test.setTimeout(180000);
+  const { m, rpc, setFeed } = await setup(page, 2);
+  await page.goto(`${WEB}/provide?pool=eurc`);
   await page
     .getByRole("button", { name: "Connect wallet", exact: true })
     .first()
     .click();
-  await expect(page.getByRole("button", { name: "Claim aDEMO" })).toBeEnabled();
-  await page.getByRole("button", { name: "Claim aDEMO" }).click();
-  await expect(page.getByRole("status")).toContainText(
-    "Claim test aDEMO confirmed.",
-    { timeout: 30000 },
-  );
-  await page.goto("http://127.0.0.1:5184/provide?pool=wrapped");
-  // The authorized wallet is restored after a full page load without another prompt.
-  await expect(
-    page.getByRole("button", { name: "Connect wallet", exact: true }),
-  ).toHaveCount(0);
-  await page.getByLabel("Amount", { exact: true }).fill("500");
+  await page.getByLabel("Amount", { exact: true }).fill("50");
   await page.getByRole("button", { name: "Review provision" }).click();
   await page.getByRole("button", { name: "Confirm capital provision" }).click();
   await expect(
     page.getByRole("heading", { name: "Capital provided." }),
   ).toBeVisible({ timeout: 30000 });
-  await page
-    .getByRole("navigation", { name: "Main navigation" })
-    .getByRole("link", { name: "Trade", exact: true })
-    .click();
-  await page.getByLabel("Asset", { exact: true }).selectOption("wrapped");
-  await page.getByLabel("Amount", { exact: true }).fill("0.001");
-  await page.getByRole("button", { name: "Review trade", exact: true }).click();
-  await expect(page.getByText("Maximum payment")).toBeVisible();
-  await page.getByRole("button", { name: "Confirm buy" }).click();
+  await page.goto(`${WEB}/protect?pool=eurc`);
+  // The authorized wallet is restored after a full page load without another prompt.
   await expect(
-    page.getByRole("heading", { name: "Trade confirmed." }),
-  ).toBeVisible({ timeout: 30000 });
-  await page.getByRole("link", { name: "Protect this exact amount" }).click();
-  await expect(page.getByLabel("Amount", { exact: true })).toHaveValue("0.001");
+    page.getByRole("button", { name: "Connect wallet", exact: true }),
+  ).toHaveCount(0);
+  await page.getByLabel("Amount", { exact: true }).fill("10");
   await page.getByRole("button", { name: "Review protection" }).click();
+  await expect(page.getByText("11 USDC").first()).toBeVisible();
   await page.getByRole("button", { name: "Confirm protection" }).click();
   await expect(
     page.getByRole("heading", { name: "Protection opened." }),
@@ -75,21 +85,8 @@ test("local signed browser journey: faucet → provider → funded buy → prote
   await page.getByRole("link", { name: "View position" }).click();
   await rpc.request({ method: "evm_increaseTime", params: [61] } as any);
   await rpc.request({ method: "evm_mine", params: [] } as any);
-  await rpc.request({
-    method: "eth_sendTransaction",
-    params: [
-      {
-        from: accounts[0],
-        to: m.referenceOracle,
-        data: encodeFunctionData({
-          abi: parseAbi(["function set(uint256)"]),
-          functionName: "set",
-          args: [50000000n],
-        }),
-      },
-    ],
-  } as any);
-  await page.getByLabel("Amount to exit", { exact: true }).fill("0.0005");
+  await setFeed(m.chronicle.eurcUsd, 2_200000000000000000n);
+  await page.getByLabel("Amount to exit", { exact: true }).fill("5");
   await page.getByRole("button", { name: "Review exit", exact: true }).click();
   await page.getByRole("button", { name: "Confirm exit", exact: true }).click();
   await expect(page.getByRole("status")).toContainText(
@@ -123,74 +120,76 @@ test("local signed browser journey: faucet → provider → funded buy → prote
     page.getByRole("heading", { name: "Connect your wallet" }),
   ).toBeVisible();
 });
-test("an in-flight quote cannot revive a previous asset review", async ({
+test("a stale reference price blocks protection and explains why", async ({
   page,
 }) => {
   test.skip(!enabled, "Explicit local-only chain setup required.");
-  const m = JSON.parse(readFileSync(".local/deployment.json", "utf8"));
-  const rpc = createPublicClient({ transport: http("http://127.0.0.1:8547") });
-  expect(await rpc.getChainId()).toBe(31337);
-  const accounts = (await rpc.request({
-    method: "eth_accounts",
-  } as any)) as string[];
-  const account = accounts[3];
+  const { m, rpc } = await setup(page, 3);
+  // Age the cirBTC feed past the 3-hour limit without moving the clock backwards.
+  const { timestamp } = await rpc.getBlock();
   await rpc.request({
     method: "eth_sendTransaction",
     params: [
       {
-        from: account,
-        to: m.backingToken,
+        from: ((await rpc.request({ method: "eth_accounts" } as any)) as string[])[0],
+        to: m.chronicle.cirbtcUsdc,
         data: encodeFunctionData({
-          abi: parseAbi(["function faucet()"]),
-          functionName: "faucet",
+          abi: chronicle,
+          functionName: "set",
+          args: [81827_183708000000000000n, timestamp - 10801n],
         }),
       },
     ],
   } as any);
-  await page.exposeFunction("__walletRpc", async (r: any) => {
-    if (["eth_requestAccounts", "eth_accounts"].includes(r.method))
-      return [account];
-    if (r.method === "wallet_switchEthereumChain") return null;
-    return rpc.request(r);
-  });
-  await page.addInitScript(() => {
-    (window as any).ethereum = {
-      request: (r: any) => (window as any).__walletRpc(r),
-      on: () => {},
-      removeListener: () => {},
-    };
-  });
-  await page.goto("http://127.0.0.1:5184/trade");
+  await page.goto(`${WEB}/protect?pool=cirbtc`);
   await page
     .getByRole("button", { name: "Connect wallet", exact: true })
     .first()
     .click();
-  await page.getByLabel("Asset", { exact: true }).selectOption("wrapped");
-  await page.getByLabel("Amount", { exact: true }).fill("0.001");
+  await page.getByLabel("Amount", { exact: true }).fill("0.0001");
+  await page.getByRole("button", { name: "Review protection" }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "reference price is stale or unavailable",
+  );
+  await expect(
+    page.getByRole("button", { name: "Confirm protection" }),
+  ).toHaveCount(0);
+});
+test("an in-flight quote cannot revive a previous market review", async ({
+  page,
+}) => {
+  test.skip(!enabled, "Explicit local-only chain setup required.");
+  const { m } = await setup(page, 3);
+  await page.goto(`${WEB}/protect?pool=eurc`);
+  await page
+    .getByRole("button", { name: "Connect wallet", exact: true })
+    .first()
+    .click();
+  await page.getByLabel("Amount", { exact: true }).fill("1");
   let release!: () => void, intercepted!: () => void;
   const held = new Promise<void>((r) => (release = r)),
     arrived = new Promise<void>((r) => (intercepted = r));
-  await page.route("http://127.0.0.1:8547/", async (route) => {
+  let holding = true;
+  await page.route(`${RPC}/`, async (route) => {
     const body = route.request().postDataJSON();
     // Local reads may arrive as JSON-RPC batches.
     if (
+      holding &&
       (Array.isArray(body) ? body : [body]).some(
         (call: any) =>
           call.method === "eth_call" &&
-          call.params?.[0]?.to?.toLowerCase() === m.exchange.toLowerCase(),
+          call.params?.[0]?.to?.toLowerCase() === m.eurcPool.toLowerCase(),
       )
     ) {
+      holding = false;
       intercepted();
       await held;
     }
     await route.continue();
   });
-  await page.getByRole("button", { name: "Review trade", exact: true }).click();
+  await page.getByRole("button", { name: "Review protection" }).click();
   await arrived;
-  await page.getByLabel("Asset", { exact: true }).selectOption("vault");
+  await page.getByLabel("Choose a market").selectOption("scenario");
   release();
-  await expect(page.getByRole("alert")).toContainText("Review again.");
-  await expect(page.getByRole("button", { name: "Confirm buy" })).toHaveCount(
-    0,
-  );
+  await expect(page.getByRole("button", { name: "Confirm protection" })).toHaveCount(0);
 });

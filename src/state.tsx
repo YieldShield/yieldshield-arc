@@ -53,6 +53,10 @@ export type Snapshot = {
   claimable: bigint;
   price: bigint | null;
   oracleError: string;
+  /** Seconds since the oldest feed value behind a reference price; null for synthetic or unreadable sources. */
+  oracleAge: bigint | null;
+  /** The adapter's freshness limit in seconds; null for synthetic sources. */
+  maxAge: bigint | null;
   capacity: bigint;
   nav: bigint | null;
   maturity: bigint;
@@ -130,11 +134,11 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
     readsInFlight = useRef(0);
   const generation = useRef(0),
     currentAccount = useRef<Address | null>(null);
-  // Production writes require a verified Fuji manifest; only the dev-only local mode accepts local evidence.
+  // Production writes require a verified Arc testnet manifest; only the dev-only local mode accepts local evidence.
   const ready = Boolean(
     config.factory &&
-    config.referencePool &&
-    config.backingToken &&
+    config.eurcPool &&
+    config.usdc &&
     config.chainId === chain.id &&
     config.status ===
       (localMode ? "local-only-verified" : "deployed-and-verified"),
@@ -204,60 +208,37 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
             (m) => m.address?.toLowerCase() === address.toLowerCase(),
           ),
       );
-      // Community pools are priced by an approved oracle or its bvaDEMO-unit adapter; name the source
-      // so a synthetic scenario pool cannot pass for a Chainlink-priced one.
-      const sources: [Address | null, string][] = [
-        [config.referenceOracle, "Chainlink AVAX/USD"],
-        [config.scenarioOracle, "Synthetic 25 → 35 → 15 cycle"],
-        [config.vaultOracle, "Vault redemption backing"],
+      // Community pools use one of the factory's approved oracles; name the source so a synthetic
+      // scenario pool cannot pass for a Chronicle-priced one.
+      const sources: [Address | null, string, boolean][] = [
+        [config.eurcOracle, "Chronicle EURC/USD ÷ USDC/USD", false],
+        [config.cirbtcOracle, "Chronicle CIRBTC/USDC", false],
+        [config.scenarioOracle, "Synthetic 1.10 → 1.20 → 1.00 cycle", true],
       ];
-      const [details, adapters] = await Promise.all([
-        Promise.all(
-          community.map((address) =>
-            Promise.all(
-              ["protectedToken", "backing", "oracle"].map((n) =>
-                read(address, poolAbi, n),
-              ),
-            ),
+      const details = await Promise.all(
+        community.map((address) =>
+          Promise.all(
+            ["protectedToken", "oracle"].map((n) => read(address, poolAbi, n)),
           ),
         ),
-        community.length
-          ? Promise.all(
-              sources.map(([oracle]) =>
-                oracle
-                  ? read(config.factory, factoryAbi, "backingOracles", [
-                      oracle,
-                    ]).catch(() => null)
-                  : null,
-              ),
-            )
-          : [],
-      ]);
-      const sourceOf = (oracle: Address) =>
-        sources.findIndex(([direct], i) =>
-          [direct, adapters[i]].some(
-            (o) => o?.toLowerCase() === oracle.toLowerCase(),
-          ),
-        );
+      );
       community.forEach((address, i) => {
-        const [asset, backing, oracle] = details[i];
+        const [asset, oracle] = details[i];
         const item = assets.find(
           (a) => a.address?.toLowerCase() === asset.toLowerCase(),
         );
         if (!item) return;
-        const source = sourceOf(oracle);
+        const source = sources.find(
+          ([o]) => o?.toLowerCase() === oracle.toLowerCase(),
+        );
         catalog.push({
           key: address,
-          name: `${source === 1 ? "Scenario" : "Community"} ${item.symbol} · ${short(address)}`,
+          name: `${source?.[2] ? "Scenario" : "Community"} ${item.symbol} · ${short(address)}`,
           asset: item.key,
           address,
-          backing,
-          backingSymbol:
-            backing.toLowerCase() === config.backingVault?.toLowerCase()
-              ? "bvaDEMO"
-              : "aDEMO",
           oracle,
-          source: source < 0 ? "Factory-approved oracle" : sources[source][1],
+          source: source ? source[1] : "Factory-approved oracle",
+          synthetic: source ? source[2] : true,
         });
       });
     } catch (e) {
@@ -302,12 +283,20 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
                 )
               : rawTerms;
             let price: bigint | null = null,
-              oracleError = "";
+              oracleError = "",
+              oracleAge: bigint | null = null,
+              maxAge: bigint | null = null;
             try {
               price = await read(oracle, oracleAbi, "price");
             } catch (e) {
               oracleError = safeError(e);
             }
+            if (!market.synthetic)
+              [oracleAge, maxAge] = await Promise.all(
+                ["age", "maxAge"].map((n) =>
+                  read(oracle, oracleAbi, n).catch(() => null),
+                ),
+              );
             const positions = (
               await Promise.all(
                 (openIds as bigint[]).map((id) =>
@@ -332,6 +321,9 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
                   ].map((n) => read(address, poolAbi, n, [owner])),
                 )
               : [0n, 0n, 0n, 0n, 0n];
+            const unit =
+              10n **
+              BigInt(assets.find((a) => a.key === market.asset)!.decimals);
             data[market.key] = {
               backing,
               reserved,
@@ -346,6 +338,8 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
               positions,
               price,
               oracleError,
+              oracleAge,
+              maxAge,
               terms,
               ownShares: personal[0],
               ready: personal[1],
@@ -361,7 +355,7 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
                   ? backing
                   : price === null
                     ? null
-                    : backing + (inventory * price) / 10n ** 18n,
+                    : backing + (inventory * price) / unit,
             };
           } catch (e) {
             issues[market.key] = safeError(e);
@@ -373,10 +367,9 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
       await Promise.all(
         [
           ["native", null],
-          ["wrapped", config.wrapper],
-          ["vault", config.vault],
-          ["backing", config.backingToken],
-          ["backing-vault", config.backingVault],
+          ["usdc", config.usdc],
+          ["eurc", config.eurc],
+          ["cirbtc", config.cirbtc],
         ].map(async ([key, address]) => {
           try {
             funds[key!] = address
@@ -429,7 +422,7 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
     }
     const provider = walletProvider();
     if (!remembered || !provider) return;
-    // eth_accounts and eth_chainId never prompt; restore only an already-authorized account on Fuji.
+    // eth_accounts and eth_chainId never prompt; restore only an already-authorized account on Arc testnet.
     void Promise.all([
       provider.request({ method: "eth_accounts" }) as Promise<Address[]>,
       provider.request({ method: "eth_chainId" }) as Promise<string>,
@@ -484,7 +477,8 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
     value?: bigint,
     assertReview?: () => void,
   ) {
-    if (!ready) throw new Error("Fuji contracts are awaiting deployment.");
+    if (!ready)
+      throw new Error("Arc testnet contracts are awaiting deployment.");
     if (!currentAccount.current) throw new Error("Connect your wallet first.");
     const expected = currentAccount.current;
     const expectedGeneration = generation.current;

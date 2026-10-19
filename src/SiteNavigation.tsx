@@ -4,10 +4,10 @@ import { RouteLink } from "./ui";
 
 const primary = [
   ["/markets", "Markets"],
-  ["/trade", "Trade"],
   ["/protect", "Protect"],
   ["/provide", "Provide"],
   ["/positions", "Portfolio"],
+  ["/agents", "Agents"],
 ] as const;
 const secondary = [
   ["/create-pool", "Create a pool"],
@@ -107,7 +107,7 @@ export function Navigation() {
         <RouteLink to="/" className="brand">
           <img src="/mark.svg" alt="" width="38" height="38" />
           <span>
-            YieldShield<small>ALPINE / AVALANCHE</small>
+            YieldShield<small>ARC / TESTNET</small>
           </span>
         </RouteLink>
         <button
@@ -145,7 +145,7 @@ export function Navigation() {
         </ul>
       </nav>
       <div className="sidebar-bottom">
-        <small>Avalanche · Testnet</small>
+        <small>Arc Testnet · chain 5042002</small>
       </div>
     </aside>
   );

@@ -13,14 +13,14 @@ import {
   fmt,
   chainDeadline,
   chainTimestamp,
+  GAS_RESERVE,
 } from "./chain";
 import { useShield } from "./state";
 import { PageTitle, ActionButton, Facts, RouteLink, Risk } from "./ui";
 import { safeError } from "./math.mjs";
 export function CreatePool() {
   const { account, identity, approve, transact } = useShield();
-  const [asset, setAsset] = useState("native"),
-    [backing, setBacking] = useState("cash"),
+  const [asset, setAsset] = useState<"eurc" | "cirbtc">("eurc"),
     [source, setSource] = useState("reference"),
     [terms, setTerms] = useState(DEFAULT_TERMS),
     [review, setReview] = useState<{
@@ -35,16 +35,16 @@ export function CreatePool() {
     setReview(null);
     setError("");
     setSuccess("");
-  }, [asset, backing, source, terms, identity]);
+  }, [asset, source, terms, identity]);
   const chosen = assets.find((a) => a.key === asset)!,
-    collateral = backing === "cash" ? config.backingToken : config.backingVault,
+    collateral = config.usdc,
     oracle =
-      asset === "vault"
-        ? config.vaultOracle
-        : asset === "native" && source === "scenario"
+      asset === "cirbtc"
+        ? config.cirbtcOracle
+        : source === "scenario"
           ? config.scenarioOracle
-          : config.referenceOracle;
-  const guard = useReviewGuard([asset, backing, source, terms, identity]);
+          : config.eurcOracle;
+  const guard = useReviewGuard([asset, source, terms, identity]);
   async function check() {
     setError("");
     const assertCurrent = guard();
@@ -90,9 +90,9 @@ export function CreatePool() {
         );
       await read(oracle, oracleAbi, "price");
       const held = await read(collateral, tokenAbi, "balanceOf", [account]);
-      if (held < seed)
+      if (held < seed + GAS_RESERVE)
         throw new Error(
-          `Seeding needs ${fmt(seed)} ${backing === "cash" ? "aDEMO" : "bvaDEMO"}; this wallet holds ${fmt(held)}. ${backing === "cash" ? "Claim aDEMO from the faucet" : "Convert aDEMO to bvaDEMO on Trade"} first.`,
+          `Seeding needs ${fmt(seed)} USDC plus about 0.1 USDC for network fees; this wallet holds ${fmt(held)} USDC. Get testnet USDC from Circle's faucet first.`,
         );
       if (
         terms.collateralBps < 12500 ||
@@ -141,8 +141,8 @@ export function CreatePool() {
         "Create and seed market",
         config.factory,
         factoryAbi,
-        "createPoolWithBacking",
-        [chosen.address, oracle, collateral, terms, review.deadline],
+        "createPool",
+        [chosen.address, oracle, terms, review.deadline],
         undefined,
         review.assertCurrent,
       );
@@ -199,7 +199,9 @@ export function CreatePool() {
                 <select
                   name="protected-asset"
                   value={asset}
-                  onChange={(e) => setAsset(e.target.value)}
+                  onChange={(e) =>
+                    setAsset(e.target.value as "eurc" | "cirbtc")
+                  }
                 >
                   {assets.map((a) => (
                     <option value={a.key} key={a.key}>
@@ -208,30 +210,22 @@ export function CreatePool() {
                   ))}
                 </select>
               </label>
-              <label className="field-label">
-                Junior backing
-                <select
-                  name="backing-asset"
-                  value={backing}
-                  onChange={(e) => setBacking(e.target.value)}
-                >
-                  <option value="cash">aDEMO · six-decimal demo token</option>
-                  <option value="vault">
-                    bvaDEMO · funded backing-vault receipts
-                  </option>
-                </select>
-              </label>
-              {asset === "native" && (
+              <p className="muted-text">
+                Backing: USDC on Arc testnet, the only approved backing.
+              </p>
+              {asset === "eurc" && (
                 <label className="field-label">
-                  Oracle
+                  Price source
                   <select
                     name="oracle-source"
                     value={source}
                     onChange={(e) => setSource(e.target.value)}
                   >
-                    <option value="reference">Chainlink reference</option>
+                    <option value="reference">
+                      Chronicle EURC/USD ÷ USDC/USD
+                    </option>
                     <option value="scenario">
-                      Synthetic scenario · 25 / 35 / 15
+                      Synthetic scenario · 1.10 / 1.20 / 1.00
                     </option>
                   </select>
                 </label>
@@ -267,7 +261,7 @@ export function CreatePool() {
                     items={[
                       [
                         "Initial provider seed",
-                        `${fmt(review.seed)} ${backing === "cash" ? "aDEMO" : "bvaDEMO"}`,
+                        `${fmt(review.seed)} USDC`,
                       ],
                       ["Protocol gain fee", "Fixed 1%"],
                       ["Fees taken from", "Positive realized gains only"],
@@ -300,21 +294,22 @@ export function CreatePool() {
         <section className="market-card">
           <h2>A real independent market.</h2>
           <p className="card-description">
-            The seed is 500 units of your selected backing token. It is credited
-            to you as provider shares, not consumed as a listing fee.
+            The seed is 5 testnet USDC. It is credited to you as provider
+            shares, not consumed as a listing fee.
           </p>
           <Facts
             items={[
-              ["Approved protected assets", "AVAX · awAVAX · vaDEMO"],
-              ["Approved backing", "aDEMO · bvaDEMO"],
+              ["Approved protected assets", "EURC · cirBTC"],
+              ["Approved backing", "USDC"],
+              ["Approved prices", "Chronicle reference · EURC scenario"],
               ["Position cap", "100 open positions; 0.01 minimum entry claim"],
               ["Creation limit", "2 markets per wallet; 22 community slots"],
               ["Creator control", "Immutable terms; no seizure function"],
             ]}
           />
-          <Risk provider backing={backing === "cash" ? "aDEMO" : "bvaDEMO"} />
-          <RouteLink className="hero-link" to="/trade#convert">
-            Create backing-vault receipts ↗
+          <Risk provider synthetic={asset === "eurc" && source === "scenario"} />
+          <RouteLink className="hero-link" to="/faucet?asset=usdc">
+            Get testnet USDC ↗
           </RouteLink>
         </section>
       </div>

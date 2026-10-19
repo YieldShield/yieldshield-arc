@@ -4,7 +4,7 @@ test("undeployed UI, no-wallet feedback and scenario disclosures", async ({
 }) => {
   await page.goto("/protect");
   await expect(
-    page.getByRole("button", { name: "Awaiting Fuji deployment" }),
+    page.getByRole("button", { name: "Awaiting Arc testnet deployment" }),
   ).toBeDisabled();
   await page
     .getByRole("button", { name: "Connect wallet", exact: true })
@@ -13,8 +13,9 @@ test("undeployed UI, no-wallet feedback and scenario disclosures", async ({
     "Ethereum-compatible wallet",
   );
   await page.goto("/how-it-works");
-  await page.getByRole("slider").fill("60");
-  await expect(page.getByText("+60%", { exact: true })).toBeVisible();
+  await page.getByRole("slider").fill("20");
+  await expect(page.getByText("+20%", { exact: true })).toBeVisible();
+  await expect(page.getByText("110.00 USDC")).toBeVisible();
   await expect(
     page.getByText(/At maturity, remaining assets are surrendered/),
   ).toBeVisible();
@@ -35,7 +36,7 @@ test("wallet account and network changes clear the connected session", async ({
 }) => {
   await page.addInitScript(() => {
     let account = "0x1111111111111111111111111111111111111111";
-    let chain = "0xa869";
+    let chain = "0x4cef52";
     const listeners: Record<string, Set<(...args: unknown[]) => void>> = {};
     const provider = {
       async request({ method }: { method: string }) {
@@ -43,7 +44,7 @@ test("wallet account and network changes clear the connected session", async ({
           return [account];
         if (method === "eth_chainId") return chain;
         if (method === "wallet_switchEthereumChain") {
-          chain = "0xa869";
+          chain = "0x4cef52";
           return null;
         }
         throw new Error(`Unexpected wallet method ${method}`);
@@ -88,4 +89,44 @@ test("wallet account and network changes clear the connected session", async ({
   await expect(
     page.getByRole("button", { name: "Connect wallet", exact: false }).first(),
   ).toBeVisible();
+});
+
+test("agent manifest, llms.txt and ABIs are served and match the deployment", async ({
+  page,
+  request,
+}) => {
+  const manifest = await (await request.get("/agent.json")).json();
+  expect(manifest.schema).toBe("yieldshield-arc/agent-manifest/v1");
+  expect(manifest.network.chainId).toBe(5042002);
+  expect(manifest.agentPolicy.signing).toBe("never");
+  expect(manifest.assets.map((a: any) => a.symbol)).toEqual([
+    "USDC",
+    "EURC",
+    "cirBTC",
+  ]);
+  const llms = await (await request.get("/llms.txt")).text();
+  expect(llms).toContain("Agents never sign");
+  const abi = await (await request.get("/abi/ShieldPool.json")).json();
+  expect(abi.some((item: any) => item.name === "protect")).toBe(true);
+  await page.goto("/agents");
+  await expect(
+    page.getByRole("heading", { name: "Read the markets. Never sign." }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "/agent.json" })).toBeVisible();
+});
+test("status and assets name Arc testnet, USDC decimals and no monetary value", async ({
+  page,
+}) => {
+  await page.goto("/status");
+  await expect(page.getByText("Arc Testnet (Circle)")).toBeVisible();
+  await expect(page.getByText("5042002", { exact: true })).toBeVisible();
+  await expect(page.getByText("https://rpc.testnet.arc.io")).toBeVisible();
+  await page.goto("/assets");
+  await expect(
+    page.getByText("0x3600000000000000000000000000000000000000"),
+  ).toBeVisible();
+  await expect(page.getByText(/18 decimals natively/)).toBeVisible();
+  await expect(page.getByText(/no monetary value/).first()).toBeVisible();
+  const body = await page.locator("body").innerText();
+  expect(body).not.toMatch(/Avalanche|Fuji|AVAX/);
 });

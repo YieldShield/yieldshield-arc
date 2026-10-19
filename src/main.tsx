@@ -8,12 +8,12 @@ import { Markets, PoolDetail } from "./Markets";
 import { RouteLink, Notice, Empty } from "./ui";
 import { Navigation, PortfolioNavigation } from "./SiteNavigation";
 import "./style.css";
-const Trade = lazy(() => import("./Trade").then((m) => ({ default: m.Trade })));
 const CreatePool = lazy(() =>
   import("./CreatePool").then((m) => ({ default: m.CreatePool })),
 );
 import { Portfolio, Activity, Faucet, Status, Assets } from "./AccountPages";
 import { Guide, Legal } from "./Guide";
+import { Agents } from "./Agents";
 import { RouteOrientation, routeName, decodeRoutePart } from "./navigation";
 function App() {
   const { account, connect, message, setMessage, markets, loading } =
@@ -43,12 +43,12 @@ function App() {
       <main id="main-content" tabIndex={-1}>
         <header>
           <div className="breadcrumb">
-            Alpine <span>/</span> {routeName(location.pathname)}
+            Arc <span>/</span> {routeName(location.pathname)}
           </div>
           <div className="header-actions">
             <span className="network">
               <i />
-              {localMode ? "LOCAL CHAIN" : "AVALANCHE FUJI"}
+              {localMode ? "LOCAL CHAIN" : "ARC TESTNET"}
             </span>
             <button className="wallet-button" onClick={() => void connect()}>
               {account ? short(account) : "Connect wallet"}
@@ -92,7 +92,7 @@ function App() {
                 <Route path="/provide" element={<RoleFlow role="provide" />} />
                 <Route path="/positions" element={<Positions />} />
                 <Route path="/positions/:key" element={<PositionDetail />} />
-                <Route path="/trade" element={<Trade />} />
+                <Route path="/agents" element={<Agents />} />
                 <Route path="/create-pool" element={<CreatePool />} />
                 <Route path="/portfolio" element={<Portfolio />} />
                 <Route path="/activity" element={<Activity />} />
@@ -115,8 +115,8 @@ function App() {
             </Suspense>
           )}
           <footer>
-            <span>▲ YieldShield Alpine</span>
-            <p>Capital at risk</p>
+            <span>◠ YieldShield Arc</span>
+            <p>Arc testnet · capital at risk · test tokens only</p>
             <RouteLink to="/legal">Terms & risks</RouteLink>
           </footer>
         </div>

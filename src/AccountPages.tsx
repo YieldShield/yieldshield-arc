@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   config,
@@ -6,15 +5,14 @@ import {
   fmt,
   explorer,
   short,
-  read,
-  tokenAbi,
-  client,
-  poolAbi,
   localMode,
+  networkName,
+  BACKING,
 } from "./chain";
 import { useShield } from "./state";
-import { PageTitle, Facts, RouteLink, ActionButton, Empty } from "./ui";
-import { safeError } from "./math.mjs";
+import { PageTitle, Facts, RouteLink, Empty } from "./ui";
+import { formatAge, isFresh } from "./freshness.mjs";
+const faucetUrl = config.faucet || "https://faucet.circle.com";
 export function Portfolio() {
   const { account, balances, markets, snapshots, disconnect } = useShield();
   return (
@@ -22,7 +20,7 @@ export function Portfolio() {
       <PageTitle
         eyebrow="YOUR HOLDINGS"
         title="Wallet balances."
-        description="Balances and claims in their original asset units."
+        description="Balances and claims in their original token units."
       />
       {account && (
         <button className="secondary-button" onClick={disconnect}>
@@ -37,13 +35,12 @@ export function Portfolio() {
       )}
       <div className="catalog-grid">
         {[
+          { key: "usdc", symbol: "USDC", decimals: 6 },
           ...assets.map((a) => ({
             key: a.key,
             symbol: a.symbol,
-            decimals: 18,
+            decimals: a.decimals,
           })),
-          { key: "backing", symbol: "aDEMO", decimals: 6 },
-          { key: "backing-vault", symbol: "bvaDEMO", decimals: 6 },
         ].map((a) => (
           <article className="market-card" key={a.key}>
             <div className="eyebrow">WALLET / {a.symbol}</div>
@@ -53,8 +50,14 @@ export function Portfolio() {
                 : "—"}{" "}
               <small>{a.symbol}</small>
             </h2>
-            <RouteLink className="hero-link" to="/trade">
-              Trade or convert ↗
+            {a.key === "usdc" && (
+              <p className="card-description">
+                The same balance pays Arc network fees. The wallet shows it with
+                18 decimals; contracts use the 6-decimal ERC-20 view.
+              </p>
+            )}
+            <RouteLink className="hero-link" to={`/faucet?asset=${a.key}`}>
+              Get test {a.symbol} ↗
             </RouteLink>
           </article>
         ))}
@@ -64,6 +67,7 @@ export function Portfolio() {
           .filter((m) => snapshots[m.key] && account)
           .map((m) => {
             const s = snapshots[m.key],
+              asset = assets.find((a) => a.key === m.asset)!,
               own = s.positions.filter(
                 (p) => p.owner.toLowerCase() === account?.toLowerCase(),
               ),
@@ -73,14 +77,8 @@ export function Portfolio() {
                 <h2>{m.name}</h2>
                 <Facts
                   items={[
-                    [
-                      "Protected entry claims",
-                      `${fmt(floor, 6, 6)} ${m.backingSymbol}`,
-                    ],
-                    [
-                      "Matured backing credit",
-                      `${fmt(s.claimable, 6, 6)} ${m.backingSymbol}`,
-                    ],
+                    ["Protected entry claims", `${fmt(floor, 6, 6)} USDC`],
+                    ["Matured backing credit", `${fmt(s.claimable, 6, 6)} USDC`],
                     [
                       "Provider ownership",
                       s.totalShares
@@ -89,7 +87,7 @@ export function Portfolio() {
                     ],
                     [
                       "Earned asset fees",
-                      `${fmt(s.earned, 18, 8)} ${assets.find((a) => a.key === m.asset)!.symbol}`,
+                      `${fmt(s.earned, asset.decimals, 8)} ${asset.symbol}`,
                     ],
                   ]}
                 />
@@ -154,95 +152,97 @@ export function Activity() {
     </>
   );
 }
+/** Funding page: every asset comes from Circle's public testnet faucet; nothing is minted by this app. */
 export function Faucet() {
   const [params] = useSearchParams();
-  const { account, identity, transact, balances, chainTime } = useShield();
-  const [next, setNext] = useState<bigint | null>(null),
-    [error, setError] = useState("");
-  useEffect(() => {
-    setNext(null);
-    if (account && config.backingToken)
-      void read(config.backingToken, tokenAbi, "nextClaim", [account])
-        .then(setNext)
-        .catch((e) => setError(safeError(e)));
-  }, [account, identity, balances.backing]);
+  const { balances } = useShield();
+  const back = params.get("return");
+  const keep = new URLSearchParams(params);
+  keep.delete("asset");
+  keep.delete("return");
+  const tokens = [
+    {
+      key: "usdc",
+      symbol: "USDC",
+      note: "Backing for providers and gas for every transaction. Request it first.",
+    },
+    {
+      key: "eurc",
+      symbol: "EURC",
+      note: "Protected asset in the EURC reference and scenario markets.",
+    },
+    {
+      key: "cirbtc",
+      symbol: "cirBTC",
+      note: "Protected asset in the cirBTC reference market.",
+    },
+  ];
   return (
     <>
       <PageTitle
         eyebrow="TESTNET SUPPLIES"
-        title="Get ready for the route."
-        description="You need Fuji AVAX for gas and aDEMO for backing or trading. Every asset here is valueless; no mainnet funds are required."
+        title="Get Arc testnet tokens."
+        description="USDC pays gas and backs every market; EURC and cirBTC are the protected assets. All come from Circle's public faucet and have no monetary value."
       />
-      <div className="market-grid">
-        <section className="action-card">
-          <h2>Claim 10,000 aDEMO</h2>
-          <p>
-            The contract faucet permits one claim per wallet per hour. aDEMO is
-            not Circle USDC and is not dollar redeemable.
-          </p>
-          <Facts
-            items={[
-              [
-                "Wallet balance",
-                balances.backing !== undefined
-                  ? `${fmt(balances.backing)} aDEMO`
-                  : "Unavailable",
-              ],
-              [
-                "Next claim",
-                next === null
-                  ? "Read after connecting"
-                  : next > chainTime
-                    ? new Date(Number(next) * 1000).toLocaleString("en-US")
-                    : "Available now",
-              ],
-            ]}
-          />
-          <ActionButton
-            disabled={next !== null && next > chainTime}
-            onClick={() =>
-              void transact(
-                "Claim test aDEMO",
-                config.backingToken,
-                tokenAbi,
-                "faucet",
-              ).catch((e) => setError(safeError(e)))
-            }
+      <div className="catalog-grid">
+        {tokens.map((t) => (
+          <article
+            className={`market-card${params.get("asset") === t.key ? " selected-card" : ""}`}
+            key={t.key}
           >
-            Claim aDEMO
-          </ActionButton>
-          {error && (
-            <p className="error-note" role="alert">
-              {error}
+            <div className="eyebrow">CIRCLE FAUCET / {t.symbol}</div>
+            <h2>{t.symbol}</h2>
+            <p className="card-description">{t.note}</p>
+            <Facts
+              items={[
+                [
+                  "Your balance",
+                  balances[t.key] !== undefined
+                    ? `${fmt(balances[t.key], t.key === "cirbtc" ? 8 : 6, 8)} ${t.symbol}`
+                    : "Connect to read",
+                ],
+              ]}
+            />
+          </article>
+        ))}
+      </div>
+      <div className="market-grid">
+        <section className="market-card">
+          <h2>Use Circle&apos;s faucet</h2>
+          <p className="card-description">
+            Open the faucet, choose the token and the <b>Arc Testnet</b>{" "}
+            network, and paste your own wallet address. Circle allows one
+            request per token and network every two hours. The faucet uses
+            reCAPTCHA; this app never requests tokens on your behalf.
+          </p>
+          <a
+            className="hero-link"
+            href={faucetUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open faucet.circle.com ↗
+          </a>
+          {localMode && (
+            <p className="muted-text">
+              Local mode: the disposable chain pre-funds its test accounts with
+              local stand-ins instead.
             </p>
           )}
         </section>
         <section className="market-card">
-          <h2>Fuji AVAX for gas</h2>
+          <h2>Then return to your route</h2>
           <p className="card-description">
-            Get gas from the official faucet using your test wallet. Never fund
-            the Alpine deployer.
+            Keep about 0.1 USDC unspent: the same balance pays network fees.
           </p>
-          <a
-            className="hero-link"
-            href="https://build.avax.network/console/primary-network/faucet"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open Avalanche faucet ↗
-          </a>
           <div className="button-row">
             <RouteLink
               className="secondary-button"
-              to={`/trade?${params.toString()}`}
+              to={`/${back === "provide" ? "provide" : "protect"}?${keep.toString()}`}
             >
-              Return to acquisition
-            </RouteLink>
-            <RouteLink
-              className="secondary-button"
-              to={`/trade?${params.toString()}#convert`}
-            >
-              Wrap or deposit
+              {back === "provide"
+                ? "Return to providing with your amount"
+                : "Return to protection with your amount"}
             </RouteLink>
           </div>
         </section>
@@ -256,8 +256,8 @@ export function Status() {
     <>
       <PageTitle
         eyebrow="NETWORK STATUS"
-        title="Verify the ground beneath you."
-        description="Check deployment, contracts and price availability."
+        title="Verify before you sign."
+        description="Check the network, deployment, contracts and price freshness."
       />
       <div className="market-grid">
         <article className="market-card">
@@ -266,15 +266,17 @@ export function Status() {
               ? "Contracts configured"
               : config.factory
                 ? "Verification pending"
-                : "Fuji deployment pending"}
+                : config.status === "awaiting-testnet-usdc"
+                  ? "Waiting for testnet USDC"
+                  : "Arc testnet deployment pending"}
           </h2>
           <Facts
             items={[
-              [
-                "Network",
-                localMode ? "Local Anvil test chain" : "Avalanche Fuji C-Chain",
-              ],
+              ["Network", networkName],
               ["Chain ID", String(config.chainId)],
+              ["RPC", config.rpcUrl],
+              ["Explorer", config.explorer],
+              ["Gas token", "USDC (18-decimal native view)"],
               ["Manifest state", config.status],
               [
                 "Read status",
@@ -298,21 +300,20 @@ export function Status() {
             {loading ? "Refreshing…" : "Refresh network reads"}
           </button>
           <p className="card-description">
-            Local test results do not confirm a Fuji deployment.
+            Local test results do not confirm an Arc testnet deployment.
           </p>
         </article>
         <article className="market-card">
           <h2>Deployment addresses</h2>
           {[
-            "factory",
-            "exchange",
-            "backingToken",
-            "wrapper",
-            "vault",
-            "backingVault",
-          ].map((key) => (
+            ["factory", "Factory"],
+            ["eurcOracle", "EURC price adapter"],
+            ["cirbtcOracle", "cirBTC price adapter"],
+            ["scenarioOracle", "Scenario oracle"],
+            ["deployer", "Test deployer"],
+          ].map(([key, label]) => (
             <div key={key}>
-              <p className="source-note">{key}</p>
+              <p className="source-note">{label}</p>
               {config[key] ? (
                 <a
                   className="address"
@@ -330,44 +331,55 @@ export function Status() {
         </article>
       </div>
       <div className="table-list">
-        {markets.map((m) => (
-          <article key={m.key}>
-            <h2>{m.name}</h2>
-            <Facts
-              items={[
-                [
-                  "Data status",
-                  errors[m.key]
-                    ? "Read failed"
-                    : snapshots[m.key]
-                      ? "Contract read succeeded"
-                      : ready || m.address
-                        ? loading
-                          ? "Loading…"
-                          : "Unavailable"
-                        : "Awaiting deployment",
-                ],
-                [
-                  "Oracle",
-                  snapshots[m.key]?.price
-                    ? `${fmt(snapshots[m.key].price!)} ${m.backingSymbol}`
-                    : "Unavailable",
-                ],
-                ["Source", m.source],
-              ]}
-            />
-            {snapshots[m.key]?.oracleError && (
-              <p className="error-note" role="alert">
-                {snapshots[m.key].oracleError}
-              </p>
-            )}
-            {errors[m.key] && (
-              <p className="error-note" role="alert">
-                {errors[m.key]}
-              </p>
-            )}
-          </article>
-        ))}
+        {markets.map((m) => {
+          const s = snapshots[m.key];
+          return (
+            <article key={m.key}>
+              <h2>{m.name}</h2>
+              <Facts
+                items={[
+                  [
+                    "Data status",
+                    errors[m.key]
+                      ? "Read failed"
+                      : s
+                        ? "Contract read succeeded"
+                        : ready || m.address
+                          ? loading
+                            ? "Loading…"
+                            : "Unavailable"
+                          : "Awaiting deployment",
+                  ],
+                  [
+                    "Price",
+                    s?.price
+                      ? `${fmt(s.price, 6, 6)} USDC per ${assets.find((a) => a.key === m.asset)!.symbol}`
+                      : "Unavailable",
+                  ],
+                  [
+                    "Freshness",
+                    m.synthetic
+                      ? "Synthetic scenario; never a reference"
+                      : s?.oracleAge != null && s?.maxAge != null
+                        ? `${formatAge(s.oracleAge)} old, limit ${formatAge(s.maxAge)} · ${isFresh(s.oracleAge, s.maxAge) ? "fresh" : "stale: new protection and asset exits paused"}`
+                        : "Unavailable",
+                  ],
+                  ["Source", m.source],
+                ]}
+              />
+              {s?.oracleError && (
+                <p className="error-note" role="alert">
+                  {s.oracleError}
+                </p>
+              )}
+              {errors[m.key] && (
+                <p className="error-note" role="alert">
+                  {errors[m.key]}
+                </p>
+              )}
+            </article>
+          );
+        })}
       </div>
       {errors.registry && (
         <p className="error-note" role="alert">
@@ -383,41 +395,31 @@ export function Assets() {
       <PageTitle
         eyebrow="TOKEN IDENTITIES"
         title="Know what you hold."
-        description="Test assets, their roles and contract addresses."
+        description="Circle testnet assets on Arc, their roles and contract addresses."
       />
       <div className="asset-cards">
         {[
+          {
+            key: "usdc",
+            symbol: BACKING.symbol,
+            name: BACKING.name,
+            address: BACKING.address,
+            decimals: 6,
+            description:
+              "Backing for every market and Arc's gas token. One balance, two views: 18 decimals natively (gas, wallet display) and 6 decimals through this ERC-20 interface, which the contracts use exclusively. Testnet USDC has no monetary value.",
+          },
           ...assets,
-          {
-            key: "backing",
-            symbol: "aDEMO",
-            name: "Alpine Demo Dollar",
-            address: config.backingToken,
-            decimals: 6,
-            description:
-              "Faucet-issued valueless demo backing. Not USDC and not dollar redeemable.",
-          },
-          {
-            key: "backing-vault",
-            symbol: "bvaDEMO",
-            name: "Alpine Backing Vault",
-            address: config.backingVault,
-            decimals: 6,
-            description:
-              "Funded aDEMO ERC-4626 receipts used as junior backing. Floors are fixed receipt units, not guaranteed fixed aDEMO value.",
-          },
         ].map((a) => (
           <article key={a.key}>
             <div className="eyebrow">
-              INTEGRATED CAPABILITY / {a.decimals} DECIMALS
+              {a.key === "usdc" ? "BACKING" : "PROTECTED ASSET"} /{" "}
+              {a.decimals} DECIMALS
             </div>
             <h2>
               {a.name} · {a.symbol}
             </h2>
             <p>{a.description}</p>
-            {a.key === "native" ? (
-              <small>Native network asset · no token contract</small>
-            ) : a.address ? (
+            {a.address ? (
               <a
                 className="address"
                 href={explorer("address", a.address)}
@@ -427,7 +429,7 @@ export function Assets() {
                 {a.address}
               </a>
             ) : (
-              <small>Contract pending Fuji deployment</small>
+              <small>Address unavailable</small>
             )}
           </article>
         ))}
@@ -435,19 +437,15 @@ export function Assets() {
       <div className="field-note">
         <h2>Research references</h2>
         <p>
-          BENQI sAVAX and Circle USDC are not integrated in this deployment.
-          They cannot be bought, protected or provided here. A production
-          integration requires separate oracle, redemption, liquidity and
+          USYC (Circle&apos;s tokenized money-market fund share) is entitlement
+          gated and is not integrated: it cannot be bought, protected or
+          provided here. CCTP exits and the Arc mainnet path are planned, not
+          live. A production integration requires separate oracle, legal and
           security review.
         </p>
-        <a
-          className="hero-link"
-          href="https://docs.benqi.fi/benqi-liquid-staking/overview"
-          target="_blank"
-          rel="noreferrer"
-        >
-          BENQI documentation ↗
-        </a>
+        <RouteLink className="hero-link" to="/agents">
+          Machine-readable market manifest ↗
+        </RouteLink>
       </div>
     </>
   );

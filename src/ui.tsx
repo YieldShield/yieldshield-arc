@@ -1,6 +1,7 @@
 import { type ReactNode, useId } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { assets, config, fmt, localMode, type Market } from "./chain";
+import { formatAge } from "./freshness.mjs";
 import { useShield } from "./state";
 export function useMarket() {
   const a = useShield();
@@ -8,7 +9,7 @@ export function useMarket() {
   const key =
     params.get("pool") ||
     a.markets.find((m) => a.snapshots[m.key]?.protectOpen)?.key ||
-    "reference";
+    "eurc";
   const market = a.markets.find(
     (m) => m.key.toLowerCase() === key.toLowerCase(),
   );
@@ -36,7 +37,7 @@ export function RouteLink({
   className?: string;
 }) {
   const [params] = useSearchParams();
-  const url = new URL(to, "https://alpine.local");
+  const url = new URL(to, "https://arc.local");
   if (!url.searchParams.has("pool") && params.has("pool"))
     url.searchParams.set("pool", params.get("pool")!);
   return (
@@ -74,7 +75,7 @@ export function MarketSelect() {
       >
         {markets.map((m) => (
           <option key={m.key} value={m.key}>
-            {m.name} / {m.backingSymbol}
+            {m.name} / USDC
             {snapshots[m.key] && !snapshots[m.key].provideOpen
               ? " · matured"
               : ""}
@@ -100,18 +101,20 @@ export function Notice() {
   const { ready } = useShield();
   return !ready ? (
     <div className="notice deployment-notice">
-      <strong>Valueless test assets.</strong>{" "}
+      <strong>Arc testnet only. Test tokens have no monetary value.</strong>{" "}
       {config.factory
         ? "Contract verification pending. Transactions disabled."
-        : "Fuji deployment pending. Transactions disabled."}{" "}
+        : config.status === "awaiting-testnet-usdc"
+          ? "Deployment is waiting for testnet USDC. Transactions disabled."
+          : "Arc testnet deployment pending. Transactions disabled."}{" "}
       <RouteLink className="inline-link" to="/status">
         Network status
       </RouteLink>
     </div>
   ) : (
     <div className="testnet-note">
-      <span>{localMode ? "LOCAL DEMO" : "TESTNET ONLY"}</span>
-      Valueless test assets.
+      <span>{localMode ? "LOCAL DEMO" : "ARC TESTNET ONLY"}</span>
+      Testnet USDC, EURC and cirBTC have no monetary value.
     </div>
   );
 }
@@ -136,7 +139,7 @@ export function ActionButton({
         : !ready
           ? config.factory
             ? "Awaiting verification"
-            : "Awaiting Fuji deployment"
+            : "Awaiting Arc testnet deployment"
           : !account
             ? "Connect wallet"
             : children}
@@ -158,7 +161,7 @@ export function Amount({
   max?: string;
 }) {
   const id = useId();
-  const native = symbol === "AVAX";
+  const gas = symbol === "USDC";
   return (
     <div className="field-label">
       <label htmlFor={id}>{label}</label>
@@ -180,9 +183,9 @@ export function Amount({
       </div>
       <span className="amount-help" id={`${id}-hint`}>
         Amount in {symbol}.
-        {native ? " Keep some AVAX available for network fees." : ""}
+        {gas ? " USDC also pays Arc network fees; keep 0.1 USDC unspent." : ""}
       </span>
-      {max && !native && (
+      {max && (
         <button
           type="button"
           className="text-button"
@@ -196,10 +199,10 @@ export function Amount({
 }
 export function Risk({
   provider = false,
-  backing = "aDEMO",
+  synthetic = false,
 }: {
   provider?: boolean;
-  backing?: string;
+  synthetic?: boolean;
 }) {
   return (
     <div className="risk-box">
@@ -208,13 +211,13 @@ export function Risk({
       </strong>
       <p>
         {provider
-          ? "You absorb losses. Deposits and withdrawals pause while protection is open. After maturity, anyone can settle it to lift the pause. Redemptions can include surrendered assets; fees and returns are not guaranteed."
+          ? "You absorb losses. Deposits and withdrawals pause while protection is open. After maturity, anyone can settle it to lift the pause. Redemptions can include surrendered assets; fees and returns may be zero."
           : "At maturity, remaining assets are surrendered for the fixed entry claim, even if their price rose. Exit earlier to keep upside. Partial exits reduce the claim proportionally."}
       </p>
-      {backing === "bvaDEMO" && (
+      {synthetic && (
         <p>
-          Your floor is fixed in bvaDEMO receipts, not dollars. Their redeemable
-          aDEMO value can change.
+          This is a scenario market: its price is a public synthetic cycle, not
+          a market price. Use it to try both exits.
         </p>
       )}
     </div>
@@ -235,17 +238,17 @@ export function MarketCard({
     <article className="market-card">
       <div className="card-top">
         <div className="token-stack">
-          <span className="avax-symbol">
-            {market.asset === "vault" ? "v" : "▲"}
+          <span className="asset-symbol">
+            {market.asset === "cirbtc" ? "₿" : "€"}
           </span>
-          <span className="backing-symbol">
-            {market.backingSymbol === "bvaDEMO" ? "v" : "a"}
-          </span>
+          <span className="backing-symbol">$</span>
         </div>
         <span className="test-pill">
           {s
             ? s.provideOpen
-              ? "TESTNET"
+              ? market.synthetic
+                ? "SCENARIO"
+                : "TESTNET"
               : "MATURED"
             : errors[market.key]
               ? "READ FAILED"
@@ -256,20 +259,30 @@ export function MarketCard({
       </div>
       <Heading>{market.name}</Heading>
       <p className="card-description">
-        {asset.symbol} / {market.backingSymbol}
+        {asset.symbol} protected by USDC
       </p>
       <div className="price-source">{market.source}</div>
       <Facts
         items={[
           [
-            `Price · ${market.backingSymbol}`,
-            s?.price ? fmt(s.price) : "Unavailable",
+            `Price · USDC per ${asset.symbol}`,
+            s?.price ? fmt(s.price, 6, 6) : "Unavailable",
+          ],
+          [
+            "Price freshness",
+            market.synthetic
+              ? "Synthetic scenario"
+              : s?.oracleAge != null && s?.maxAge != null
+                ? `${formatAge(s.oracleAge)} old · limit ${formatAge(s.maxAge)}`
+                : s?.oracleError
+                  ? "Stale or unavailable"
+                  : "Unavailable",
           ],
           [
             "Available entry claims",
             s
               ? s.protectOpen
-                ? `${fmt(s.capacity)} ${market.backingSymbol}`
+                ? `${fmt(s.capacity)} USDC`
                 : "Closed · epoch ending"
               : ready || market.address
                 ? loading
