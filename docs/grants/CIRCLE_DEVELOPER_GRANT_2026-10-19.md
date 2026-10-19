@@ -56,7 +56,7 @@ This compares the [17 October application plan](../../../docs/grants/APPLICATION
   The video must show the code either way.
 - [ ] **Commitments.** The "Arc must be central" wording must not contradict other applications. In particular, the Flare 1-year commitment and Arbitrum exclusivity are still open in the [application plan](../../../docs/grants/APPLICATION_PLAN_2026-10-17.md).
 - [ ] **Funding register.** Still true: self-funded, and no grants or investment received. Update the pending list from the [funding register](../../../docs/grants/FUNDING_REGISTER.md) before pasting.
-- [ ] **Personal details.** Confirm Santiago's city and his GitHub URL (or "N/A"). Confirm that David's location may be given as Dortmund, the city on his public GitHub profile.
+- [ ] **Personal details.** Confirm Santiago's city and his GitHub URL (or "N/A"). David's location is Simmern (confirmed by David on 19 October), matching the company's registered seat.
 - [ ] **Dates.** The roadmap dates assume acceptance around 30 November 2026. Shift them to the actual acceptance date.
 - [ ] **Audit answer.** "Seeking audit support" is answered Yes. Change it if you prefer not to signal that.
 - [ ] **Drive folder.** Record the video, then prepare the transcript, screenshots and deck (see David-only actions). Give view and download access.
@@ -126,7 +126,7 @@ https://github.com/YieldShield/yieldshield-arc
 **Where are you and your founders located?**
 
 ```
-David Hawig, Founder and Managing Director, Dortmund, North Rhine-Westphalia, Germany
+David Hawig, Founder and Managing Director, Simmern (Hunsrück), Rhineland-Palatinate, Germany
 Santiago Balaguer, Cofounder and Product Lead, [city], Germany
 ```
 
