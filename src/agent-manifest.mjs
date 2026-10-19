@@ -156,7 +156,7 @@ export function buildAgentManifest(m, { site = SITE } = {}) {
       mustNotDo: [
         "sign or broadcast transactions",
         "request or store private keys or seed phrases",
-        "describe positions as insurance, guaranteed or risk-free",
+        "describe a position as loss-proof, as cover against loss, or as earning a promised return",
         "present the scenario market's synthetic price as a market price",
         "treat testnet activity as adoption or value",
       ],

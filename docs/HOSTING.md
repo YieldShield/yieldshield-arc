@@ -1,33 +1,49 @@
-# Avalanche demo hosting
+# Hosting
 
-The public interface is https://avalanche.yieldshield.ai. The dedicated Vercel project is `yieldshield-avalanche` (`prj_JasaGB0OBYNqmMWlPIv4zbs1I7jp`) in the existing YieldShield team. No existing chain application or domain was replaced.
+**Status on 19 October 2026: prepared only. No Vercel project, domain or public deployment has been created.**
 
-Current application release (12 October 2026, Fuji writes enabled): `c0fc917017a4184f37b6ad3de0dec9ff0afe5a8b` on `codex/avalanche-mini-grant`. It bundles the `deployed-and-verified` manifest of Fuji deployment `fuji-2026-10-12T18-48-56Z-8bd0c9`; the application source is unchanged from the previous release. Vercel built preview `dpl_Ce1V6gGj9FRyAA8KXGSussuN94N1` from the pushed commit. Its entry bundle `/assets/index-DQ7V7b2u.js` was checked for the verified status, the factory `0x97644e8cc3037d26cbe7341dca464383b4011875`, the featured pools, aDEMO and the deployer address, and contained no `awaiting-testnet-gas`. Production deployment `dpl_3fgnQYLRNqXp2P1JsS7Rk3wXUqgs` is READY at https://yieldshield-avalanche-4wqhmn783-noc2-6281s-projects.vercel.app and aliased to https://avalanche.yieldshield.ai. In Chromium the custom domain served that bundle, and `/markets` read the five live Fuji markets (Chainlink AVAX/USD 10.4524 aDEMO; 333.33 aDEMO available entry claims per reference market; provider entry open) without the awaiting-deployment gate or console errors. At 390px it had no horizontal overflow. [E2E_REPORT.md](E2E_REPORT.md#fuji-e2e-12-october-2026) records the 19-transaction Fuji journey.
+## Plan
 
-Previous release: `29987a4a2d204af7d1bfae0a7a61634527a98b81`, deployment `dpl_WAmcPWMJ7PrYXbnWwdA3128jdXrp`, READY at https://yieldshield-avalanche-l10q1sst8-noc2-6281s-projects.vercel.app and was aliased to the public custom domain. It was built by Vercel from the pushed GitHub commit (not a local CLI upload); a preview of the same tree was checked first for the new security, framing and immutable-asset headers, which the custom domain now serves.
+| Item | Value |
+|---|---|
+| Vercel project | `yieldshield-arc`, in the existing YieldShield team |
+| Production domain | `arc.yieldshield.ai` |
+| Git source | `YieldShield/yieldshield-arc`, branch `main`. The repository is private for now; Vercel's GitHub integration can build from it |
+| Framework preset | Vite |
+| Install command | `npm ci --ignore-scripts` |
+| Build command | `npm run build`, which runs `tsc --noEmit` and then `vite build` |
+| Output directory | `dist` |
+| Environment variables | None. Public identities live in `config/deployment.json`, and the production build cannot enable local-chain mode |
+| Deployment protection | Keep it on for preview deployments, as on the other YieldShield chain sites |
 
-This review release fixes reward-index rounding that could lock the last provider claim, bounds open (not lifetime) positions with a 0.01 minimum entry claim, reserves factory slots for featured markets and caps community creators, adds gain-fee and exchange-funding events, shows matured markets as closed, batches reads (Multicall3 on Fuji) without letting polling starve a refresh, requires a verified Fuji manifest for writes, explains contract reverts, restores an authorized wallet after reload, and hardens the deploy/verify scripts (bound signed intents, 30-day featured epochs, front-run-safe vault seeds, fee- and feed-aware preflight, runtime-code verification). Checks: 11 JavaScript tests, 41 Solidity tests (three fuzz), 8 browser tests including the signed local lifecycle, the production build, the 48-transaction local journey, and a full 26-transaction deploy plus `verify:fuji` against a chain-43113 Anvil with a mock feed at the Fuji Chainlink address (24.52M gas). At that release Fuji contracts were still undeployed and writes were disabled.
+`vercel.json` is the template's file, unchanged except for one added rule:
 
-Earlier release: `4898dbdc36c53a85ff64d9332764c76ccad998d7`, deployment `dpl_5VfwH45shDTytQtHuMqw9HPi8XEB`.
+- **SPA rewrite:** every path outside `/assets/` serves `index.html`. Static files, including `/agent.json`, `/llms.txt`, `/abi/*.json` and the icons, are served first.
+- **Security headers on every path:**
+  - `Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'`
+  - `X-Frame-Options: DENY`
+  - `X-Content-Type-Options: nosniff`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`
+- **Assets:** `/assets/*` gets `Cache-Control: public, max-age=31536000, immutable`.
+- **Added for the agent surface:** `/agent.json`, `/llms.txt` and `/abi/*` get `Access-Control-Allow-Origin: *` and `Cache-Control: public, max-age=300`, so agents and other sites can fetch them.
 
-The preceding E2E release (`becea03`) fixed transaction-review replay, stale account reads, route/input invalidation, chain-time readiness and final signing checks. Ten JavaScript tests, 32 Solidity tests, the production build, 48 native lifecycle transactions and 44 distinct CUA browser transaction receipts pass. [E2E_REPORT.md](E2E_REPORT.md) records the complete paths and limitations. Earlier keyboard, responsive navigation, form, favicon and draft-continuity checks remain in [UI_REVIEW.md](UI_REVIEW.md).
+`.vercelignore` excludes the following from uploads:
+- environment files;
+- `.secrets` (test signers and signed intents);
+- `.local` (local manifests and rehearsal signers);
+- `node_modules`, Foundry output, test results and Playwright reports.
 
-The current release simplifies navigation to five primary text links plus More, provides a mobile Menu, shortens repeated copy, combines deployment notices and repairs same-page keyboard focus. Ten JavaScript tests and the production build pass. [UI_SIMPLIFICATION.md](UI_SIMPLIFICATION.md) records research, separate source commits, measured reductions and checks.
+## Steps for David (not done by automation)
 
-Post-deployment browser verification loaded `/protect` with production bundle `/assets/index-BQokzPTo.js`, four icon links and the correct Fuji deployment gate. Desktop content width equalled the viewport; at 390px phone size the content stayed within 375px with no horizontal overflow. Desktop More/Escape and phone same-route focus passed. The public Protect → Trade → Faucet → Trade → Protect journey retained the wrapped pool and exact 0.25 amount. Evidence: [desktop](evidence/ui-simplification/published-desktop.jpg), [phone](evidence/ui-simplification/published-mobile.jpg).
+1. In the YieldShield Vercel team, create the project `yieldshield-arc` from `YieldShield/yieldshield-arc` with the settings above.
+2. Add the domain `arc.yieldshield.ai` and set the DNS record Vercel asks for.
+3. Deploy `main`, then check:
+   - the custom domain serves the current bundle;
+   - `/status` shows "Arc Testnet (Circle)", chain 5042002 and the manifest state;
+   - `/agent.json` returns JSON with `"schema": "yieldshield-arc/agent-manifest/v1"`, and `/llms.txt` returns text;
+   - the security headers are present (`curl -sI https://arc.yieldshield.ai/`);
+   - at 390 px the page has no horizontal overflow (`npm run test:browser` covers this locally).
+4. While the manifest says `awaiting-testnet-usdc`, the site shows the pending state and keeps writes disabled. That is safe to publish. After `npm run verify:arc-testnet` marks the deployment verified, rebuild so the site and `/agent.json` carry the deployed addresses.
 
-The application includes dedicated holder protection and capital-provider workflows, partial exits, holder ownership transfer, separate fee claims, actual funded exchange and vault/wrapper conversions, two backing choices, native factory creation and full supporting routes. [FEATURE_PARITY.md](FEATURE_PARITY.md) records the reference feature comparison and intentional economic differences.
-
-Protocol validation from the preceding feature release (unchanged by the current UI fixes): production build, 32 Solidity tests including two 256-run fuzz regressions, five exact-unit arithmetic tests, eight automated browser tests and 48 confirmed local-chain lifecycle transactions. The browser tests include two signed local-chain workflow/race cases. [Local transaction evidence](evidence/local-journey.json) identifies source hashes and ten verified workflow scenarios. These tests do not constitute a security audit or a Fuji contract deployment.
-
-Initial production deployment on 11 October 2026: `dpl_Db9abQ133n8cobWfoguM8mcu3XhV`, reported READY and successfully aliased to the verified custom domain. Vercel records source commit `8d01bd329c1f5a0c0da26ae73a1fd0a56edfc349`. Subsequent source formatting and local evidence updates do not change application behavior. The immutable URL is https://yieldshield-avalanche-b4xquj7rp-noc2-6281s-projects.vercel.app (deployment protection remains enabled).
-
-The public custom-domain browser check confirmed direct loading of protection, provider, trading, market/detail, position/detail, portfolio, activity, creation, faucet, assets, status, explanation, scenarios and legal routes. Every workflow remains visibly gated on Fuji deployment. Public desktop and phone layouts passed; the 390px phone viewport had a 375px content width with no page overflow. [Protection desktop](evidence/parity-protect-desktop.jpg) and [protection mobile](evidence/parity-protect-mobile.jpg).
-
-Local browser review also verified invalid-pool rejection, missing-wallet feedback, wallet-context guards, and Protect → Trade → Faucet → Trade → Protect continuity with the selected wrapped asset and exact entered amount retained, including browser back/forward navigation. No real wallet extension was installed for the manual browser checks; native transaction proof is separately recorded.
-
-This is a static Vite application. Build with `npm run build`, output `dist`. Hosting needs no server signer, API credential or database. `.vercelignore` excludes environment files, test signers, local manifests/build caches and private application drafts. `.env.local` and `.vercel/` are ignored local hosting metadata and must never be committed. Local-chain mode additionally requires Vite development mode and cannot activate in this production build. Existing deployment protection was retained; the custom production domain remains public.
-
-Fuji contracts were deployed and verified on 12 October 2026, when the deferred deployment was resumed. See [operations](OPERATIONS.md) for the explicit broadcast and verification procedure. The displayed reference price and local test receipts must not be described as a completed public-chain contract deployment.
-
-Later documentation and screenshot commits do not alter the application source deployed above.
+Each later release should be recorded here: commit, Vercel deployment ID, the checks run and their results.
