@@ -303,7 +303,7 @@ await run(
 );
 const sourceHash = {};
 for (const file of [
-  "contracts/src/AlpinePool.sol",
+  "contracts/src/ShieldPool.sol",
   "contracts/src/AlpineMarket.sol",
   "contracts/src/DemoAssets.sol",
 ])

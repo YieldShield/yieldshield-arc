@@ -72,7 +72,7 @@ export type Activity = {
   time: number;
 };
 const Context = createContext<any>(null);
-export const useAlpine = () =>
+export const useShield = () =>
   useContext(Context) as {
     account: Address | null;
     identity: number;
@@ -108,13 +108,13 @@ export const useAlpine = () =>
 const stored = () => {
   try {
     return JSON.parse(
-      localStorage.getItem("alpine-activity-v2") || "[]",
+      localStorage.getItem("shield-arc-activity-v1") || "[]",
     ) as Activity[];
   } catch {
     return [];
   }
 };
-export function AlpineProvider({ children }: { children: ReactNode }) {
+export function ShieldProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<Address | null>(null),
     [identity, setIdentity] = useState(0),
     [busy, setBusy] = useState(false),
@@ -142,7 +142,7 @@ export function AlpineProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       localStorage.setItem(
-        "alpine-activity-v2",
+        "shield-arc-activity-v1",
         JSON.stringify(activity.slice(0, 100)),
       );
     } catch {
@@ -414,8 +414,8 @@ export function AlpineProvider({ children }: { children: ReactNode }) {
   // Remembers only that this browser chose to connect; addresses and keys are never stored.
   const rememberConnection = (on: boolean) => {
     try {
-      if (on) localStorage.setItem("alpine-wallet-connected", "1");
-      else localStorage.removeItem("alpine-wallet-connected");
+      if (on) localStorage.setItem("shield-arc-wallet-connected", "1");
+      else localStorage.removeItem("shield-arc-wallet-connected");
     } catch {
       /* Without storage the wallet simply is not restored after a reload. */
     }
@@ -423,7 +423,7 @@ export function AlpineProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let remembered = false;
     try {
-      remembered = localStorage.getItem("alpine-wallet-connected") === "1";
+      remembered = localStorage.getItem("shield-arc-wallet-connected") === "1";
     } catch {
       /* Storage unavailable. */
     }

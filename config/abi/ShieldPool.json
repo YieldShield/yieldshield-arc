@@ -30,7 +30,7 @@
       {
         "name": "terms_",
         "type": "tuple",
-        "internalType": "struct AlpinePool.Terms",
+        "internalType": "struct ShieldPool.Terms",
         "components": [
           {
             "name": "collateralBps",
@@ -69,7 +69,33 @@
   },
   {
     "type": "function",
+    "name": "ARC_TESTNET_CHAIN_ID",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "MAX_POSITIONS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MAX_PROTECT_UNITS",
     "inputs": [],
     "outputs": [
       {
@@ -96,6 +122,19 @@
   {
     "type": "function",
     "name": "PROTOCOL_FEE_BPS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "assetUnit",
     "inputs": [],
     "outputs": [
       {
@@ -297,7 +336,7 @@
   },
   {
     "type": "function",
-    "name": "exitAvax",
+    "name": "exitAsset",
     "inputs": [
       {
         "name": "id",
@@ -399,7 +438,7 @@
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IAlpineOracle"
+        "internalType": "contract IShieldOracle"
       }
     ],
     "stateMutability": "view"
@@ -597,30 +636,6 @@
   {
     "type": "function",
     "name": "protect",
-    "inputs": [
-      {
-        "name": "minFloor",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "deadline",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "payable"
-  },
-  {
-    "type": "function",
-    "name": "protectToken",
     "inputs": [
       {
         "name": "amount",
@@ -1327,11 +1342,6 @@
   {
     "type": "error",
     "name": "Slippage",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "TransferFailed",
     "inputs": []
   }
 ]

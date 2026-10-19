@@ -7,12 +7,17 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-interface IAlpineOracle {
+/// @notice Price source for one market: backing base units (6 decimals) per one whole protected-asset unit.
+interface IShieldOracle {
     function price() external view returns (uint256);
 }
 
-/// @notice Bounded testnet split-risk market. Protected assets have18 decimals; backing has6.
-contract AlpinePool is ReentrancyGuard {
+/// @notice Bounded testnet split-risk market on Arc.
+/// @dev Backing is the 6-decimal ERC-20 interface of Arc's native USDC; every backing movement goes through that
+/// interface and internal counters, never `msg.value` or `address(this).balance`. The protected asset is an ERC-20
+/// with 6 to 18 decimals (EURC: 6, cirBTC: 8). The economic rules are those of the YieldShield Alpine template;
+/// only the asset unit (`assetUnit` instead of a fixed 1e18) and the removed native-asset path differ.
+contract ShieldPool is ReentrancyGuard {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.UintSet;
 
@@ -31,9 +36,14 @@ contract AlpinePool is ReentrancyGuard {
         uint256 floor;
         uint256 openedAt;
     }
+
+    /// @notice Arc testnet chain ID; 31337 is the local development chain.
+    uint256 public constant ARC_TESTNET_CHAIN_ID = 5042002;
     IERC20 public immutable backing;
-    address public immutable protectedToken; // zero means native test AVAX
-    IAlpineOracle public immutable oracle;
+    address public immutable protectedToken;
+    /// @notice 10 ** decimals of the protected token: the amount the oracle prices.
+    uint256 public immutable assetUnit;
+    IShieldOracle public immutable oracle;
     address public immutable creator;
     address public immutable protocol;
     address private immutable initializer;
@@ -44,6 +54,8 @@ contract AlpinePool is ReentrancyGuard {
     uint256 public constant MAX_POSITIONS = 100;
     /// @notice Smallest entry floor (0.01 backing unit), so open slots cannot be filled with dust.
     uint256 public constant MIN_FLOOR = 10_000;
+    /// @notice Largest single protection, in whole protected-asset units.
+    uint256 public constant MAX_PROTECT_UNITS = 100_000;
     uint256 private constant RAY = 1e27;
     uint256 public totalBacking;
     uint256 public reservedBacking;
@@ -80,11 +92,16 @@ contract AlpinePool is ReentrancyGuard {
     error Slippage();
     error NotReady();
     error NotOwner();
-    error TransferFailed();
     error ActiveExposure();
     error EpochClosed();
     error PositionLimit();
 
+    /// @param backing_ Arc USDC ERC-20 interface (6 decimals), or a 6-decimal stand-in on the local chain.
+    /// @param oracle_ Price in backing base units per whole protected-asset unit.
+    /// @param creator_ Receives the creator gain fee by pull claim.
+    /// @param protocol_ Receives the protocol gain fee by pull claim.
+    /// @param protectedToken_ ERC-20 with 6 to 18 decimals; native value is not accepted on Arc.
+    /// @param terms_ Immutable bounded terms.
     constructor(
         address backing_,
         address oracle_,
@@ -93,10 +110,12 @@ contract AlpinePool is ReentrancyGuard {
         address protectedToken_,
         Terms memory terms_
     ) {
-        require(block.chainid == 43113 || block.chainid == 31337, "TESTNET_ONLY");
+        require(block.chainid == ARC_TESTNET_CHAIN_ID || block.chainid == 31337, "TESTNET_ONLY");
         require(creator_ != address(0) && protocol_ != address(0), "ZERO_RECIPIENT");
+        require(protectedToken_ != address(0) && protectedToken_ != backing_, "ASSET_REQUIRED");
         require(IERC20Metadata(backing_).decimals() == 6, "BACKING_DECIMALS");
-        require(protectedToken_ == address(0) || IERC20Metadata(protectedToken_).decimals() == 18, "ASSET_DECIMALS");
+        uint8 assetDecimals = IERC20Metadata(protectedToken_).decimals();
+        require(assetDecimals >= 6 && assetDecimals <= 18, "ASSET_DECIMALS");
         require(terms_.collateralBps >= 12500 && terms_.collateralBps <= 30000, "COLLATERAL_LIMIT");
         require(
             terms_.juniorFeeBps <= 2000 && terms_.creatorFeeBps <= 500
@@ -110,15 +129,17 @@ contract AlpinePool is ReentrancyGuard {
             "DELAY_LIMIT"
         );
         backing = IERC20(backing_);
-        oracle = IAlpineOracle(oracle_);
+        oracle = IShieldOracle(oracle_);
         creator = creator_;
         protocol = protocol_;
         protectedToken = protectedToken_;
+        assetUnit = 10 ** uint256(assetDecimals);
         terms = terms_;
         maturity = block.timestamp + terms_.epochSeconds;
         initializer = msg.sender;
     }
 
+    /// @notice Backing that must stay in the pool to admit `reserved` entry claims.
     function requiredBacking(uint256 reserved) public view returns (uint256) {
         return Math.mulDiv(reserved, terms.collateralBps, 10000, Math.Rounding.Ceil);
     }
@@ -128,15 +149,18 @@ contract AlpinePool is ReentrancyGuard {
         return openIds.values();
     }
 
+    /// @notice Entry claims, in backing units, that can still be admitted.
     function capacity() external view returns (uint256) {
         uint256 maximum = totalBacking * 10000 / terms.collateralBps;
         return maximum > reservedBacking ? maximum - reservedBacking : 0;
     }
 
+    /// @notice Provider NAV in backing units: backing plus surrendered assets at the oracle price.
     function juniorValue() public view returns (uint256) {
-        return totalBacking + (juniorInventory == 0 ? 0 : Math.mulDiv(juniorInventory, oracle.price(), 1 ether));
+        return totalBacking + (juniorInventory == 0 ? 0 : Math.mulDiv(juniorInventory, oracle.price(), assetUnit));
     }
 
+    /// @notice Gain fees earned by a provider and not yet claimed, in protected-asset units.
     /// @dev Accrues against a per-owner index snapshot. A rounded debt would credit up to one extra unit
     /// per share change, letting total earnings exceed the reward inventory.
     function earned(address owner) public view returns (uint256) {
@@ -148,10 +172,12 @@ contract AlpinePool is ReentrancyGuard {
         rewardPerSharePaid[owner] = rewardPerShare;
     }
 
+    /// @notice Provide backing for provider shares; only while no protection is open.
     function depositJunior(uint256 amount, uint256 minShares) external nonReentrant returns (uint256) {
         return _depositJunior(msg.sender, amount, minShares);
     }
 
+    /// @notice `depositJunior` with a deadline.
     function depositJuniorBounded(uint256 amount, uint256 minShares, uint256 deadline)
         external
         nonReentrant
@@ -185,18 +211,21 @@ contract AlpinePool is ReentrancyGuard {
         emit JuniorDeposited(owner, amount, minted);
     }
 
+    /// @notice Start the provider withdrawal notice.
     function requestJuniorWithdrawal() external {
         if (shares[msg.sender] == 0) revert InvalidAmount();
         withdrawalReadyAt[msg.sender] = block.timestamp + terms.juniorNotice;
         emit JuniorWithdrawalRequested(msg.sender, withdrawalReadyAt[msg.sender]);
     }
 
+    /// @notice Cancel a pending withdrawal notice.
     function cancelJuniorWithdrawal() external {
         if (withdrawalReadyAt[msg.sender] == 0) revert NotReady();
         withdrawalReadyAt[msg.sender] = 0;
         emit JuniorWithdrawalCancelled(msg.sender);
     }
 
+    /// @notice Backing and surrendered-asset basket for burning `burn` shares.
     function previewJuniorWithdrawal(address owner, uint256 burn)
         public
         view
@@ -206,10 +235,12 @@ contract AlpinePool is ReentrancyGuard {
         return (Math.mulDiv(totalBacking, burn, totalShares), Math.mulDiv(juniorInventory, burn, totalShares));
     }
 
+    /// @notice Redeem provider shares after notice, while no protection is open.
     function withdrawJunior(uint256 burn, uint256 minBacking, uint256 minAsset) external nonReentrant {
         _withdrawJunior(burn, minBacking, minAsset);
     }
 
+    /// @notice `withdrawJunior` with a deadline.
     function withdrawJuniorBounded(uint256 burn, uint256 minBacking, uint256 minAsset, uint256 deadline)
         external
         nonReentrant
@@ -236,6 +267,7 @@ contract AlpinePool is ReentrancyGuard {
         emit JuniorWithdrawn(msg.sender, burn, stableOut, assetOut);
     }
 
+    /// @notice Pull earned provider gain fees to `recipient`.
     function claimRewards(address recipient) external nonReentrant {
         require(recipient != address(0), "ZERO_RECIPIENT");
         _checkpoint(msg.sender);
@@ -247,6 +279,7 @@ contract AlpinePool is ReentrancyGuard {
         emit RewardsClaimed(msg.sender, recipient, amount);
     }
 
+    /// @notice Pull creator or protocol gain fees to `recipient`.
     function claimFees(address recipient) external nonReentrant {
         require(recipient != address(0), "ZERO_RECIPIENT");
         uint256 amount = claimableFees[msg.sender];
@@ -257,13 +290,9 @@ contract AlpinePool is ReentrancyGuard {
         emit FeesClaimed(msg.sender, recipient, amount);
     }
 
-    function protect(uint256 minFloor, uint256 deadline) external payable nonReentrant returns (uint256) {
-        require(protectedToken == address(0), "TOKEN_MARKET");
-        return _protect(msg.value, minFloor, deadline);
-    }
-
-    function protectToken(uint256 amount, uint256 minFloor, uint256 deadline) external nonReentrant returns (uint256) {
-        require(protectedToken != address(0), "NATIVE_MARKET");
+    /// @notice Deposit `amount` of the protected token for a fixed entry claim valued now.
+    /// @param minFloor Smallest acceptable entry claim in backing units.
+    function protect(uint256 amount, uint256 minFloor, uint256 deadline) external nonReentrant returns (uint256) {
         uint256 beforeBalance = IERC20(protectedToken).balanceOf(address(this));
         IERC20(protectedToken).safeTransferFrom(msg.sender, address(this), amount);
         require(IERC20(protectedToken).balanceOf(address(this)) - beforeBalance == amount, "EXACT_TRANSFER_ONLY");
@@ -273,9 +302,9 @@ contract AlpinePool is ReentrancyGuard {
     function _protect(uint256 amount, uint256 minFloor, uint256 deadline) private returns (uint256 id) {
         if (block.timestamp + terms.exitDelay >= maturity) revert EpochClosed();
         if (openIds.length() >= MAX_POSITIONS) revert PositionLimit();
-        if (amount == 0 || amount > 100_000 ether) revert InvalidAmount();
+        if (amount == 0 || amount > MAX_PROTECT_UNITS * assetUnit) revert InvalidAmount();
         require(block.timestamp <= deadline, "DEADLINE");
-        uint256 floor = Math.mulDiv(amount, oracle.price(), 1 ether);
+        uint256 floor = Math.mulDiv(amount, oracle.price(), assetUnit);
         if (floor < MIN_FLOOR) revert InvalidAmount();
         if (floor < minFloor) revert Slippage();
         if (totalBacking < requiredBacking(reservedBacking + floor)) revert InsufficientBacking();
@@ -287,6 +316,7 @@ contract AlpinePool is ReentrancyGuard {
         emit Protected(id, msg.sender, amount, floor);
     }
 
+    /// @notice Hand the whole remaining position, with its basis and maturity, to `recipient`.
     function transferPosition(uint256 id, address recipient) external {
         Position storage p = positions[id];
         if (p.owner != msg.sender) revert NotOwner();
@@ -296,6 +326,7 @@ contract AlpinePool is ReentrancyGuard {
         emit PositionTransferred(id, msg.sender, recipient);
     }
 
+    /// @notice Asset returned, gain fee charged and entry claim released by an asset exit of `amount`.
     function previewPartialExit(uint256 id, uint256 amount)
         public
         view
@@ -306,21 +337,24 @@ contract AlpinePool is ReentrancyGuard {
         if (amount == 0 || amount > p.amount) revert InvalidAmount();
         floorOut = amount == p.amount ? p.floor : Math.mulDiv(p.floor, amount, p.amount);
         uint256 spot = oracle.price();
-        uint256 nowValue = Math.mulDiv(amount, spot, 1 ether);
-        uint256 gain = nowValue > floorOut ? Math.mulDiv(nowValue - floorOut, 1 ether, spot) : 0;
+        uint256 nowValue = Math.mulDiv(amount, spot, assetUnit);
+        uint256 gain = nowValue > floorOut ? Math.mulDiv(nowValue - floorOut, assetUnit, spot) : 0;
         fee = Math.mulDiv(gain, terms.juniorFeeBps, 10000) + Math.mulDiv(gain, terms.creatorFeeBps, 10000)
             + Math.mulDiv(gain, PROTOCOL_FEE_BPS, 10000);
         assetOut = amount - fee;
     }
 
+    /// @notice `previewPartialExit` for the whole position.
     function previewExit(uint256 id) external view returns (uint256 out, uint256 fee) {
         (out, fee,) = previewPartialExit(id, positions[id].amount);
     }
 
-    function exitAvax(uint256 id, uint256 minAsset) external nonReentrant {
+    /// @notice Keep the whole position's asset, paying fees on any realized gain.
+    function exitAsset(uint256 id, uint256 minAsset) external nonReentrant {
         _exitAsset(id, positions[id].amount, minAsset);
     }
 
+    /// @notice Keep `amount` of the asset, paying fees on that slice's realized gain.
     function partialExitAsset(uint256 id, uint256 amount, uint256 minAsset, uint256 deadline) external nonReentrant {
         require(block.timestamp <= deadline, "DEADLINE");
         _exitAsset(id, amount, minAsset);
@@ -332,8 +366,8 @@ contract AlpinePool is ReentrancyGuard {
         (uint256 out,, uint256 floorOut) = previewPartialExit(id, amount);
         if (out < minAsset) revert Slippage();
         uint256 spot = oracle.price();
-        uint256 value = Math.mulDiv(amount, spot, 1 ether);
-        uint256 gain = value > floorOut ? Math.mulDiv(value - floorOut, 1 ether, spot) : 0;
+        uint256 value = Math.mulDiv(amount, spot, assetUnit);
+        uint256 gain = value > floorOut ? Math.mulDiv(value - floorOut, assetUnit, spot) : 0;
         uint256 reward = Math.mulDiv(gain, terms.juniorFeeBps, 10000);
         uint256 creatorFee = Math.mulDiv(gain, terms.creatorFeeBps, 10000);
         uint256 protocolFee = Math.mulDiv(gain, PROTOCOL_FEE_BPS, 10000);
@@ -350,10 +384,12 @@ contract AlpinePool is ReentrancyGuard {
         emit Exited(id, msg.sender, false, amount, out);
     }
 
+    /// @notice Surrender the whole position's asset for its fixed entry claim in USDC. Needs no price.
     function exitBacking(uint256 id) external nonReentrant {
         _exitBacking(id, positions[id].amount, 0);
     }
 
+    /// @notice Surrender `amount` of the asset for its proportional entry claim.
     function partialExitBacking(uint256 id, uint256 amount, uint256 minBacking, uint256 deadline)
         external
         nonReentrant
@@ -375,6 +411,8 @@ contract AlpinePool is ReentrancyGuard {
         emit Exited(id, msg.sender, true, amount, floorOut);
     }
 
+    /// @notice After maturity anyone may settle a position: its asset goes to providers and its owner gets a
+    /// segregated backing credit to pull with `claimBacking`. Needs no price and pushes no USDC.
     function settleExpired(uint256 id) external nonReentrant {
         if (block.timestamp < maturity) revert NotReady();
         Position memory p = positions[id];
@@ -387,6 +425,7 @@ contract AlpinePool is ReentrancyGuard {
         emit Expired(id, p.owner, p.floor);
     }
 
+    /// @notice Pull a matured backing credit.
     function claimBacking() external nonReentrant {
         uint256 amount = claimableBacking[msg.sender];
         if (amount == 0) revert InvalidAmount();
@@ -416,11 +455,6 @@ contract AlpinePool is ReentrancyGuard {
 
     function _sendAsset(address recipient, uint256 amount) private {
         if (amount == 0) return;
-        if (protectedToken != address(0)) {
-            IERC20(protectedToken).safeTransfer(recipient, amount);
-            return;
-        }
-        (bool ok,) = recipient.call{value: amount}("");
-        if (!ok) revert TransferFailed();
+        IERC20(protectedToken).safeTransfer(recipient, amount);
     }
 }

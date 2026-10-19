@@ -13,34 +13,29 @@
         "internalType": "address"
       },
       {
-        "name": "wrapper_",
+        "name": "eurc_",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "vault_",
+        "name": "cirbtc_",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "reference_",
+        "name": "eurcOracle_",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "scenario_",
+        "name": "cirbtcOracle_",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "vaultOracle_",
+        "name": "scenarioOracle_",
         "type": "address",
         "internalType": "address"
-      },
-      {
-        "name": "backingVault_",
-        "type": "address",
-        "internalType": "contract AlpineBackingVault"
       }
     ],
     "stateMutability": "nonpayable"
@@ -149,14 +144,8 @@
   },
   {
     "type": "function",
-    "name": "backingOracles",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
+    "name": "cirbtc",
+    "inputs": [],
     "outputs": [
       {
         "name": "",
@@ -168,13 +157,13 @@
   },
   {
     "type": "function",
-    "name": "backingVault",
+    "name": "cirbtcOracle",
     "inputs": [],
     "outputs": [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract AlpineBackingVault"
+        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -209,7 +198,7 @@
       {
         "name": "terms",
         "type": "tuple",
-        "internalType": "struct AlpinePool.Terms",
+        "internalType": "struct ShieldPool.Terms",
         "components": [
           {
             "name": "collateralBps",
@@ -251,7 +240,7 @@
     ],
     "outputs": [
       {
-        "name": "",
+        "name": "pool",
         "type": "address",
         "internalType": "address"
       }
@@ -260,66 +249,8 @@
   },
   {
     "type": "function",
-    "name": "createPoolWithBacking",
-    "inputs": [
-      {
-        "name": "asset",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "oracle_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "backing_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "terms",
-        "type": "tuple",
-        "internalType": "struct AlpinePool.Terms",
-        "components": [
-          {
-            "name": "collateralBps",
-            "type": "uint16",
-            "internalType": "uint16"
-          },
-          {
-            "name": "juniorFeeBps",
-            "type": "uint16",
-            "internalType": "uint16"
-          },
-          {
-            "name": "creatorFeeBps",
-            "type": "uint16",
-            "internalType": "uint16"
-          },
-          {
-            "name": "epochSeconds",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "exitDelay",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "juniorNotice",
-            "type": "uint32",
-            "internalType": "uint32"
-          }
-        ]
-      },
-      {
-        "name": "deadline",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "name": "eurc",
+    "inputs": [],
     "outputs": [
       {
         "name": "",
@@ -327,7 +258,20 @@
         "internalType": "address"
       }
     ],
-    "stateMutability": "nonpayable"
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "eurcOracle",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -401,59 +345,7 @@
   },
   {
     "type": "function",
-    "name": "referenceOracle",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "scenarioOracle",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "vault",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "vaultOracle",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "wrapper",
     "inputs": [],
     "outputs": [
       {
