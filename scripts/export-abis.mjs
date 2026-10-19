@@ -8,6 +8,8 @@ const sources = [
   ["ShieldOracles", "ShieldChronicleOracle"],
   ["ShieldOracles", "ShieldScenarioOracle"],
   ["ShieldOracles", "ShieldChainlinkOracle"],
+  ["ShieldPyth", "ShieldPythOracle"],
+  ["ShieldPyth", "IPyth"],
   ["IERC20Metadata", "IERC20Metadata"],
 ];
 mkdirSync("config/abi", { recursive: true });

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IShieldOracle} from "../src/ShieldPool.sol";
+import {PythStructs} from "../src/ShieldPyth.sol";
 
 /// @notice Foundry cheatcodes used by these tests.
 interface Vm {
@@ -175,5 +176,50 @@ contract MockAggregator {
 
     function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80) {
         return (round, answer, updated, updated, answered);
+    }
+}
+
+/// @notice Pyth stand-in. Update data is abi.encode(bytes32 id, int64 price, uint64 conf, int32 expo, uint64 publishTime),
+/// one item per feed, charged `singleUpdateFeeInWei` each like Pyth. No constructor state, so the rehearsal can install
+/// its runtime code at the real Arc testnet Pyth address on an Anvil chain. Never deployed on Arc.
+contract MockPyth {
+    mapping(bytes32 => PythStructs.Price) internal prices;
+    uint256 public singleUpdateFeeInWei;
+
+    error StalePrice();
+    error PriceFeedNotFound();
+    error InsufficientFee();
+
+    function setFee(uint256 fee) external {
+        singleUpdateFeeInWei = fee;
+    }
+
+    function setPrice(bytes32 id, int64 price, uint64 conf, int32 expo, uint256 publishTime) external {
+        prices[id] = PythStructs.Price(price, conf, expo, publishTime);
+    }
+
+    function getUpdateFee(bytes[] calldata updateData) public view returns (uint256) {
+        return singleUpdateFeeInWei * updateData.length;
+    }
+
+    function updatePriceFeeds(bytes[] calldata updateData) external payable {
+        if (msg.value < getUpdateFee(updateData)) revert InsufficientFee();
+        for (uint256 i; i < updateData.length; i++) {
+            (bytes32 id, int64 price, uint64 conf, int32 expo, uint64 publishTime) =
+                abi.decode(updateData[i], (bytes32, int64, uint64, int32, uint64));
+            if (publishTime > prices[id].publishTime) prices[id] = PythStructs.Price(price, conf, expo, publishTime);
+        }
+    }
+
+    function getPriceUnsafe(bytes32 id) public view returns (PythStructs.Price memory p) {
+        p = prices[id];
+        if (p.publishTime == 0) revert PriceFeedNotFound();
+    }
+
+    function getPriceNoOlderThan(bytes32 id, uint256 age) external view returns (PythStructs.Price memory p) {
+        p = getPriceUnsafe(id);
+        uint256 distance =
+            block.timestamp > p.publishTime ? block.timestamp - p.publishTime : p.publishTime - block.timestamp;
+        if (distance > age) revert StalePrice();
     }
 }
