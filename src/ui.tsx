@@ -106,7 +106,9 @@ export function Notice() {
         ? "Contract verification pending. Transactions disabled."
         : config.status === "awaiting-testnet-usdc"
           ? "Deployment is waiting for testnet USDC. Transactions disabled."
-          : "Arc testnet deployment pending. Transactions disabled."}{" "}
+          : config.status === "awaiting-pyth-api-key"
+            ? "Deployment is waiting for access to Pyth price updates. Transactions disabled."
+            : "Arc testnet deployment pending. Transactions disabled."}{" "}
       <RouteLink className="inline-link" to="/status">
         Network status
       </RouteLink>

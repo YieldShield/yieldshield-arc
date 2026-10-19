@@ -271,7 +271,9 @@ export function Status() {
                 ? "Verification pending"
                 : config.status === "awaiting-testnet-usdc"
                   ? "Waiting for testnet USDC"
-                  : "Arc testnet deployment pending"}
+                  : config.status === "awaiting-pyth-api-key"
+                    ? "Waiting for Pyth price access"
+                    : "Arc testnet deployment pending"}
           </h2>
           <Facts
             items={[
