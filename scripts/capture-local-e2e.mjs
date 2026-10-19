@@ -1,33 +1,24 @@
-/** Read-only evidence capture after the CUA browser journey; never broadcasts. */
-import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
+/** Read-only evidence capture after the local browser tests; never broadcasts. */
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import { createPublicClient, http, decodeFunctionData } from "viem";
-const rpc = "http://127.0.0.1:8547";
-const client = createPublicClient({ transport: http(rpc) });
-if ((await client.getChainId()) !== 31337)
-  throw new Error("Evidence capture is local-only");
+import { LOCAL_RPC, erc20Abi } from "./arc-config.mjs";
+process.chdir(fileURLToPath(new URL("../", import.meta.url)));
+const client = createPublicClient({ transport: http(LOCAL_RPC) });
+if ((await client.getChainId()) !== 31337) throw new Error("Evidence capture is local-only");
 const manifest = JSON.parse(readFileSync(".local/deployment.json"));
-if (manifest.chainId !== 31337 || manifest.rpcUrl !== rpc)
-  throw new Error("Unexpected local manifest");
+if (manifest.chainId !== 31337 || manifest.rpcUrl !== LOCAL_RPC) throw new Error("Unexpected local manifest");
 const accounts = await client.request({ method: "eth_accounts" });
 const browserSigners = accounts.slice(2, 4).map((a) => a.toLowerCase());
-const abi = [
-  "ShieldPool",
-  "ShieldFactory",
-  "AlpineExchange",
-  "AlpineDemoVault",
-  "AlpineWrappedAVAX",
-  "AlpineDemoDollar",
-].flatMap((name) => JSON.parse(readFileSync(`config/abi/${name}.json`)));
+const poolAbi = JSON.parse(readFileSync("config/abi/ShieldPool.json"));
+const abi = [...poolAbi, ...JSON.parse(readFileSync("config/abi/IERC20Metadata.json"))];
 const last = await client.getBlockNumber();
 const transactions = [];
 for (let blockNumber = 1n; blockNumber <= last; blockNumber++) {
-  const block = await client.getBlock({
-    blockNumber,
-    includeTransactions: true,
-  });
+  const block = await client.getBlock({ blockNumber, includeTransactions: true });
   for (const tx of block.transactions) {
     if (!browserSigners.includes(tx.from.toLowerCase())) continue;
     const receipt = await client.getTransactionReceipt({ hash: tx.hash });
@@ -43,94 +34,62 @@ for (let blockNumber = 1n; blockNumber <= last; blockNumber++) {
       value: String(tx.value),
       status: receipt.status,
       blockNumber: String(blockNumber),
-      chainTimestamp: String(block.timestamp),
     });
   }
 }
+const read = (address, functionName, args = []) => client.readContract({ address, abi: poolAbi, functionName, args });
+const browser = accounts[2];
+const [position, shares, earned, eurcHeld] = await Promise.all([
+  read(manifest.eurcPool, "positions", [1n]),
+  read(manifest.eurcPool, "shares", [browser]),
+  read(manifest.eurcPool, "earned", [browser]),
+  client.readContract({ address: manifest.eurc, abi: erc20Abi, functionName: "balanceOf", args: [browser] }),
+]);
+assert.equal(position[0].toLowerCase(), browser.toLowerCase(), "browser wallet owns protection #1");
+assert.equal(position[1], 5_000000n, "5 EURC remain protected after the 5 EURC asset exit");
+assert.equal(position[2], 5_500000n, "the remaining entry claim is 5.5 USDC");
+assert.ok(shares > 0n, "browser wallet holds provider shares");
+assert.equal(earned, 0n, "earned fees were claimed");
+const operations = transactions.map((t) => t.operation);
+for (const op of ["approve", "depositJuniorBounded", "protect", "partialExitAsset", "claimRewards"])
+  assert.ok(operations.includes(op), `browser journey includes ${op}`);
+assert.equal(
+  operations.filter((op) => op === "protect").length,
+  1,
+  "the stale-price and in-flight checks sent no protection",
+);
 const sourceHashes = {};
 for (const file of [
-  ...readdirSync("src").map((name) => `src/${name}`),
-  ...["ShieldPool.sol", "AlpineMarket.sol", "DemoAssets.sol"].map(
-    (name) => `contracts/src/${name}`,
-  ),
+  "src/Workflows.tsx",
+  "src/state.tsx",
+  "src/chain.ts",
+  "src/ui.tsx",
+  "contracts/src/ShieldPool.sol",
+  "contracts/src/ShieldOracles.sol",
+  "tests/browser/local-lifecycle.spec.ts",
 ])
-  sourceHashes[file] = createHash("sha256")
-    .update(readFileSync(file))
-    .digest("hex");
-const native = JSON.parse(readFileSync("docs/evidence/local-journey.json"));
-const poolAbi = JSON.parse(readFileSync("config/abi/ShieldPool.json"));
-const customPool = "0x74f28Bba2A8ef311D15a8A816Bb42B750cDd635F";
-const readPool = (address, functionName, args = []) =>
-  client.readContract({ address, abi: poolAbi, functionName, args });
-const [
-  wrappedNextId,
-  wrappedReserved,
-  customShares,
-  customClaim,
-  customReserved,
-] = await Promise.all([
-  readPool(manifest.wrappedPool, "nextPositionId"),
-  readPool(manifest.wrappedPool, "reservedBacking"),
-  readPool(customPool, "shares", [accounts[2]]),
-  readPool(customPool, "claimableBacking", [accounts[2]]),
-  readPool(customPool, "reservedBacking"),
-]);
-assert.equal(
-  wrappedNextId,
-  2n,
-  "Navigating away during approval must not create another position",
-);
-assert.equal(
-  wrappedReserved,
-  0n,
-  "Transferred wrapped position was fully exited",
-);
-assert.equal(
-  customShares,
-  0n,
-  "Custom pool provider fully redeemed after settlement",
-);
-assert.equal(
-  customClaim,
-  0n,
-  "Holder claimed credit after provider redemption",
-);
-assert.equal(
-  customReserved,
-  0n,
-  "Custom pool maturity cleared protection reserve",
-);
+  sourceHashes[file] = createHash("sha256").update(readFileSync(file)).digest("hex");
 const evidence = {
-  network: "Disposable local Anvil only; no Fuji broadcast",
+  network: "Disposable local Anvil only (chain 31337); no Arc testnet transaction",
   chainId: 31337,
   recordedAt: new Date().toISOString(),
   browserDriver:
-    "CUA with explicit localhost-only unlocked Anvil wallet bridge; no actual extension approval",
-  nativeJourneyTransactions: native.transactions.length,
-  localFixtureTransactions: manifest.transactions.length,
+    "Playwright with an injected test provider that forwards to unlocked local Anvil accounts; no wallet extension approval screens",
   browserTransactionCount: transactions.length,
-  allBrowserReceiptsSuccessful: transactions.every(
-    (t) => t.status === "success",
-  ),
-  testedSourceCommit: execFileSync("git", ["rev-parse", "HEAD"], {
-    encoding: "utf8",
-  }).trim(),
+  allBrowserReceiptsSuccessful: transactions.every((t) => t.status === "success"),
+  parentCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
   finalContractAssertions: {
-    wrappedNextPositionId: String(wrappedNextId),
-    wrappedReservedBacking: String(wrappedReserved),
-    customProviderShares: String(customShares),
-    customHolderCredit: String(customClaim),
-    customReservedBacking: String(customReserved),
+    protectionOwner: position[0],
+    remainingProtectedEurcUnits: String(position[1]),
+    remainingEntryClaimUsdcUnits: String(position[2]),
+    providerShares: String(shares),
+    unclaimedProviderFees: String(earned),
+    browserWalletEurcUnits: String(eurcHeld),
     allPassed: true,
   },
   sourceHashes,
   transactions,
 };
 mkdirSync("docs/evidence/e2e", { recursive: true });
-writeFileSync(
-  "docs/evidence/e2e/browser-receipts.json",
-  JSON.stringify(evidence, null, 2) + "\n",
-);
-console.log(
-  `${transactions.length} CUA-signed transactions captured separately from ${manifest.transactions.length} fixture and ${native.transactions.length} native-journey transactions.`,
-);
+writeFileSync("docs/evidence/e2e/browser-receipts.json", JSON.stringify(evidence, null, 2) + "\n");
+console.log(`${transactions.length} browser-signed local transactions captured; all successful: ${evidence.allBrowserReceiptsSuccessful}.`);

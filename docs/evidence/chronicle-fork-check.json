@@ -1,0 +1,59 @@
+{
+  "network": "Local Anvil fork of Arc testnet (chain 5042002) at the block below; adapters were deployed on the fork only. Nothing was sent to Arc testnet.",
+  "forkBlock": "67976839",
+  "forkBlockTime": "2026-10-19T07:44:01.000Z",
+  "createdAt": "2026-10-19T07:44:09.054Z",
+  "parentCommit": "26c5b1b27a6e19947a96aa778ac6fb3c5730a73c",
+  "sourceHash": {
+    "contracts/src/ShieldOracles.sol": "0xe6c87b59359e18255ea6df2f1bb7b7a2baf213b16b575ffa487db33f0e47a57d",
+    "scripts/check-chronicle-fork.mjs": "0x7f09379bfa9f5277cc92109e94f42ed24420ab328b5fb416d181ac0cf2aff2ee"
+  },
+  "selfKisser": "0xDecd203Ef38DEce4553Fc9fD5C570c26bD34B07F",
+  "feeds": {
+    "EURC/USD": {
+      "feed": "0x4640b2AF58f6Efc32b524C61e59C99d3845aD7C1",
+      "ok": true,
+      "value": "1123300126579703113",
+      "updatedAt": "2026-10-18T09:08:48.000Z",
+      "ageSeconds": "81313"
+    },
+    "USDC/USD": {
+      "feed": "0x7fBe79354160a1C618015aa77c193CdE0FB29099",
+      "ok": true,
+      "value": "999837840390000000",
+      "updatedAt": "2026-10-18T09:46:59.000Z",
+      "ageSeconds": "79022"
+    },
+    "CIRBTC/USDC": {
+      "feed": "0xAd1C417C4bc9f037Fc61DC3fbDc999e501155960",
+      "ok": true,
+      "value": "81827183708578801548325",
+      "updatedAt": "2026-10-18T09:08:48.000Z",
+      "ageSeconds": "81313"
+    }
+  },
+  "checks": [
+    {
+      "market": "EURC (EURC/USD ÷ USDC/USD)",
+      "adapterWhitelistedBySelfKisser": true,
+      "withMaxAge10800": {
+        "revert": "INVALID_OR_STALE_PRICE"
+      },
+      "withMaxAge86400": {
+        "price": "1123482",
+        "ageSeconds": "81320"
+      }
+    },
+    {
+      "market": "cirBTC (CIRBTC/USDC)",
+      "adapterWhitelistedBySelfKisser": true,
+      "withMaxAge10800": {
+        "revert": "INVALID_OR_STALE_PRICE"
+      },
+      "withMaxAge86400": {
+        "price": "81827183708",
+        "ageSeconds": "81321"
+      }
+    }
+  ]
+}

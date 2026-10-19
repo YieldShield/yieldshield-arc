@@ -46,7 +46,7 @@ export function Markets({ home = false }: { home?: boolean }) {
         <PageTitle
           eyebrow="DISCOVER"
           title="Find your market."
-          description="Choose an asset, backing token and role."
+          description="Choose an asset and a role. Every market is backed by USDC."
         />
       )}
       <div className="market-heading">

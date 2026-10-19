@@ -1,3 +1,12 @@
+/**
+ * Arc testnet deployment. A read-only preflight unless `--broadcast` is passed.
+ *
+ * Every transaction is signed by the dedicated test signer in the ignored .secrets/ directory, saved as a
+ * bound intent before it is sent, and recorded in config/deployment.json once mined. See docs/OPERATIONS.md.
+ *
+ * Rehearsal only: ARC_MANIFEST, ARC_RPC_URL, ARC_SIGNER_FILE and ARC_INTENTS_DIR may point the same code at a
+ * disposable chain-5042002 Anvil. They are refused unless ARC_RPC_URL is a loopback address.
+ */
 import {
   readFileSync,
   writeFileSync,
@@ -20,23 +29,32 @@ import {
   formatGwei,
   formatUnits,
   getAbiItem,
-  parseAbi,
   parseTransaction,
   recoverTransactionAddress,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { avalancheFuji } from "viem/chains";
 import { fileURLToPath } from "node:url";
 import {
   artifactProvenance,
-  exchangeInventory,
   featuredMarkets,
   openRound,
   planArtifacts,
   replaceFeaturedMarkets,
   roundPrefix,
+  seedTotal,
   setupMarkets,
 } from "./setup-markets.mjs";
+import {
+  ARC_TESTNET_ID,
+  MIN_BASE_FEE,
+  NATIVE_PER_USDC_UNIT,
+  arcTestnet,
+  assetIdentities,
+  chronicleAbi,
+  erc20Abi,
+  feeds,
+  isLoopback,
+} from "./arc-config.mjs";
 const root = fileURLToPath(new URL("../", import.meta.url));
 process.chdir(root);
 const argv = process.argv.slice(2);
@@ -56,62 +74,64 @@ const DEADLINE_WINDOW = 3600n;
 /** An unsent intent this close to its deadline is re-signed instead of rebroadcast. */
 const DEADLINE_MARGIN = 300n;
 /**
- * Sum of the gas limits of all 26 plan steps (24.77M; 24.52M used), measured by a full
- * broadcast against a chain-43113 Anvil. Remeasure when contracts or the plan change.
+ * Sum of the gas limits of all 8 plan steps (13.42M; 13.28M used), measured by `npm run rehearse:arc-testnet`
+ * (a full broadcast against a chain-5042002 Anvil with stand-ins at the canonical addresses). Remeasure when
+ * contracts or the plan change.
  */
-const PLAN_GAS = 24_800_000n;
+const PLAN_GAS = 13_450_000n;
 const GAS_HEADROOM_PERCENT = 130n;
-/**
- * Gas limits of a replacement round including both top-ups (14.43M; 14.19M used): faucet,
- * bvaDEMO deposit, two approvals and five creations, measured by --replace-featured
- * broadcasts against a Fuji fork. Remeasure when contracts or the round change.
- */
-const REPLACEMENT_GAS = 14_450_000n;
+/** Gas limits of a replacement round: one approval and three creations (8.16M in the rehearsal). */
+const REPLACEMENT_GAS = 8_200_000n;
 /** A new replacement round starts only once a featured market closes within this window. */
 const REPLACE_WINDOW = 7n * 86400n;
-/** Markets whose creation reads the Chainlink-backed reference oracle. */
-const REFERENCE_MARKETS = ["referencePool", "wrappedPool", "vaultBackingPool"];
+/** Markets whose creation reads a Chronicle-backed reference adapter. */
+const REFERENCE_MARKETS = ["eurcPool", "cirbtcPool"];
 const POLL_MS = 1500;
 const WAIT_TIMEOUT_MS = 10 * 60 * 1000;
 const CONTRACT_FIELDS = [
-  "backingToken",
   "scenarioOracle",
-  "referenceOracle",
-  "wrapper",
-  "vault",
-  "backingVault",
-  "vaultOracle",
+  "eurcOracle",
+  "cirbtcOracle",
   "factory",
-  "exchange",
-  "referencePool",
+  "eurcPool",
+  "cirbtcPool",
   "scenarioPool",
-  "wrappedPool",
-  "vaultPool",
-  "vaultBackingPool",
 ];
-const manifestPath = "config/deployment.json";
+const overrides = {
+  manifest: process.env.ARC_MANIFEST,
+  rpcUrl: process.env.ARC_RPC_URL,
+  signer: process.env.ARC_SIGNER_FILE,
+  intents: process.env.ARC_INTENTS_DIR,
+};
+const rehearsal = Object.values(overrides).some(Boolean);
+if (rehearsal && !isLoopback(overrides.rpcUrl ?? ""))
+  throw new Error(
+    "ARC_MANIFEST, ARC_RPC_URL, ARC_SIGNER_FILE and ARC_INTENTS_DIR are rehearsal overrides and require a loopback ARC_RPC_URL.",
+  );
+const manifestPath = overrides.manifest ?? "config/deployment.json";
 const manifest = JSON.parse(readFileSync(manifestPath));
 const save = () =>
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
-if (manifest.version !== 2)
-  throw new Error("This deployment plan requires manifest version 2.");
-if (manifest.chainId !== 43113)
-  throw new Error("Manifest must target Fuji 43113");
-const c = createPublicClient({
-  chain: avalancheFuji,
-  transport: http(manifest.rpcUrl),
-});
-if ((await c.getChainId()) !== 43113)
+if (manifest.version !== 3)
+  throw new Error("This deployment plan requires manifest version 3.");
+if (manifest.chainId !== ARC_TESTNET_ID)
+  throw new Error(`Manifest must target Arc testnet ${ARC_TESTNET_ID}`);
+const rpcUrl = overrides.rpcUrl ?? manifest.rpcUrl;
+const chain = arcTestnet(rpcUrl);
+const c = createPublicClient({ chain, transport: http(rpcUrl) });
+if ((await c.getChainId()) !== ARC_TESTNET_ID)
   throw new Error("RPC identity mismatch; stopped");
-const secretPath = ".secrets/fuji-test-signer.json";
+const secretPath = overrides.signer ?? ".secrets/arc-test-signer.json";
 if (!existsSync(secretPath))
   throw new Error(
-    "Missing dedicated test signer. See docs/OPERATIONS.md. Never reuse a mainnet signer.",
+    "Missing dedicated test signer. See docs/OPERATIONS.md. Never reuse a key that holds real funds.",
   );
 const { privateKey } = JSON.parse(readFileSync(secretPath));
 const account = privateKeyToAccount(privateKey);
-if (account.address.toLowerCase() !== manifest.deployer.toLowerCase())
-  throw new Error("Unexpected test signer");
+if (!manifest.deployer || account.address.toLowerCase() !== manifest.deployer.toLowerCase())
+  throw new Error(
+    `The test signer ${account.address} is not the manifest deployer ${manifest.deployer}; stopped.`,
+  );
 if (!existsSync("contracts/out"))
   throw new Error("Build the contracts first: npm run test:contracts");
 const artifacts = planArtifacts();
@@ -144,41 +164,53 @@ const changedArtifacts = manifest.source
         JSON.stringify(provenance.hashes[id]),
     )
   : [];
-const intentsRoot = ".secrets/transactions";
+const intentsRoot = overrides.intents ?? ".secrets/transactions";
 const legacyIntents = existsSync(intentsRoot)
   ? readdirSync(intentsRoot).filter((name) => name.endsWith(".json"))
   : [];
-const balance = await c.getBalance({ address: account.address });
-// Funding for the steps not yet recorded: gas at today's max fee with 30% headroom, plus the
-// native AVAX the plan sends (awAVAX deposit and exchange inventory).
+// On Arc, USDC is both gas (18-decimal native view) and the seed token (6-decimal ERC-20 view) of ONE balance.
+const [balance, usdcBalance] = await Promise.all([
+  c.getBalance({ address: account.address }),
+  c.readContract({ address: manifest.usdc, abi: erc20Abi, functionName: "balanceOf", args: [account.address] }),
+]);
 const recordedLabels = new Set(manifest.transactions.map((t) => t.label));
 const open = replacing ? openRound(manifest) : null;
 const round = replacing
   ? (open?.round ?? (manifest.replacements?.length ?? 0) + 1)
   : null;
 const usedGas = manifest.transactions
-  .filter((t) => !replacing || t.label.startsWith(roundPrefix(round)))
+  .filter((t) => (replacing ? t.label.startsWith(roundPrefix(round)) : !/^r\d+-/.test(t.label)))
   .reduce((sum, t) => sum + BigInt(t.gasUsed ?? 0), 0n);
 const planGas = replacing ? REPLACEMENT_GAS : PLAN_GAS;
 const remainingGas = usedGas < planGas ? planGas - usedGas : 0n;
-// A replacement round sends no AVAX; its seeds are aDEMO and bvaDEMO.
-const remainingValue = replacing
-  ? 0n
-  : (recordedLabels.has("wrapper-funded-deposit")
-      ? 0n
-      : exchangeInventory.wrapper) +
-    (recordedLabels.has("exchange-native-inventory")
-      ? 0n
-      : exchangeInventory.native);
-const { maxFeePerGas } = await c.estimateFeesPerGas();
+// Seeds still to be paid: one per featured market not yet created (in this round, when replacing).
+const remainingSeeds = replacing
+  ? seedTotal - (seedTotal / 3n) * BigInt(Object.keys(open?.created ?? {}).length)
+  : (seedTotal / 3n) * BigInt(featuredMarkets(manifest).filter(([f]) => !manifest[f]).length);
+/**
+ * Arc drops transactions whose maxFeePerGas is below its 20 gwei minimum base fee, so every signed fee is at
+ * least twice that minimum (and never below the node's own estimate).
+ */
+async function fees() {
+  const estimate = await c.estimateFeesPerGas();
+  const floor = 2n * MIN_BASE_FEE;
+  return {
+    maxFeePerGas: estimate.maxFeePerGas > floor ? estimate.maxFeePerGas : floor,
+    maxPriorityFeePerGas: estimate.maxPriorityFeePerGas,
+  };
+}
+const { maxFeePerGas } = await fees();
 const gasCost = (maxFeePerGas * remainingGas * GAS_HEADROOM_PERCENT) / 100n;
-const required = gasCost + remainingValue;
+const required = gasCost + remainingSeeds * NATIVE_PER_USDC_UNIT;
 console.log(
   JSON.stringify({
-    chainId: 43113,
+    chainId: ARC_TESTNET_ID,
+    rehearsal,
     deployer: account.address,
-    balanceWei: String(balance),
-    requiredWei: String(required),
+    nativeBalanceWei: String(balance),
+    usdcBalance: String(usdcBalance),
+    requiredNativeWei: String(required),
+    requiredUsdcForSeeds: String(remainingSeeds),
     deploymentId: manifest.deploymentId ?? null,
     recordedTransactions: manifest.transactions.length,
     replacementRound: round,
@@ -189,64 +221,83 @@ console.log(
   }),
 );
 console.log(
-  `Funding: requires ${formatEther(required)} AVAX = ${remainingGas} gas x ${formatGwei(maxFeePerGas)} gwei max fee x ${Number(GAS_HEADROOM_PERCENT) / 100} (${formatEther(gasCost)} AVAX) + ${formatEther(remainingValue)} AVAX sent by the plan. Balance: ${formatEther(balance)} AVAX.`,
+  `Funding: requires ${formatEther(required)} USDC = ${remainingGas} gas x ${formatGwei(maxFeePerGas)} gwei max fee x ${Number(GAS_HEADROOM_PERCENT) / 100} (${formatEther(gasCost)} USDC) + ${formatUnits(remainingSeeds, 6)} USDC of market seeds. Balance: ${formatEther(balance)} USDC (native view), ${formatUnits(usdcBalance, 6)} USDC (ERC-20 view).`,
 );
 if (uncommitted.length)
   console.log(`Uncommitted deployment inputs: ${uncommitted.join(", ")}`);
 if (legacyIntents.length)
   console.log(
-    `Ignoring ${legacyIntents.length} unbound intent file(s) written by an older script directly in ${intentsRoot}/. They are never reused; check on the explorer that none is pending before archiving them.`,
+    `Ignoring ${legacyIntents.length} unbound intent file(s) directly in ${intentsRoot}/. They are never reused; check on the explorer that none is pending before archiving them.`,
   );
-/** Mirrors ShieldChainlinkOracle.price(): reference markets cannot be created on a stale feed. */
-async function checkFeed() {
-  const feed = manifest.chainlinkFeed;
-  const [code, block] = await Promise.all([
-    c.getCode({ address: feed }),
+/** Mirrors ShieldChronicleOracle.price(): reference markets cannot be created on a stale feed. */
+async function checkFeeds() {
+  const problems = [];
+  const [block, kisserCode] = await Promise.all([
     c.getBlock(),
+    c.getCode({ address: manifest.chronicle.selfKisser }),
   ]);
-  if (!code || code === "0x") return `no contract at chainlinkFeed ${feed}`;
-  const abi = parseAbi([
-    "function decimals() view returns (uint8)",
-    "function latestRoundData() view returns (uint80, int256, uint256, uint256, uint80)",
-  ]);
-  const [decimals, [round, answer, , updatedAt, answeredInRound]] =
-    await Promise.all([
-      c.readContract({ address: feed, abi, functionName: "decimals" }),
-      c.readContract({ address: feed, abi, functionName: "latestRoundData" }),
-    ]);
-  const age = block.timestamp - updatedAt;
+  if (!kisserCode || kisserCode === "0x")
+    problems.push(`no contract at the Chronicle SelfKisser ${manifest.chronicle.selfKisser}`);
   const maxAge = BigInt(manifest.maxPriceAge);
-  console.log(
-    `Chainlink AVAX/USD ${feed}: ${formatUnits(answer, decimals)}, updated ${age}s ago (maxPriceAge ${maxAge}s).`,
-  );
-  if (
-    answer <= 0n ||
-    answeredInRound < round ||
-    updatedAt === 0n ||
-    updatedAt > block.timestamp
-  )
-    return "the Chainlink feed's latest round is invalid or incomplete";
-  if (age > maxAge)
-    return `the Chainlink feed was last updated ${age}s ago, beyond maxPriceAge ${maxAge}s, so reference market creation would revert; retry after its next update`;
-  if (age + 300n > maxAge)
+  for (const [name, feed] of feeds(manifest)) {
+    const code = await c.getCode({ address: feed });
+    if (!code || code === "0x") {
+      problems.push(`no contract at the Chronicle ${name} feed ${feed}`);
+      continue;
+    }
+    const [decimals, [ok, value, updatedAt]] = await Promise.all([
+      c.readContract({ address: feed, abi: chronicleAbi, functionName: "decimals" }),
+      c.readContract({ address: feed, abi: chronicleAbi, functionName: "tryReadWithAge" }),
+    ]);
+    const age = block.timestamp - updatedAt;
     console.log(
-      "Warning: the feed may go stale before reference markets are created. A stale feed stops the run before signing that step; resume after the next update.",
+      `Chronicle ${name} ${feed}: ${ok ? formatUnits(value, decimals) : "unavailable"}, updated ${age}s ago (maxPriceAge ${maxAge}s).`,
     );
-  return null;
+    if (!ok || value === 0n || updatedAt === 0n || updatedAt > block.timestamp)
+      problems.push(`the Chronicle ${name} value is unavailable or invalid`);
+    else if (age > maxAge)
+      problems.push(
+        `the Chronicle ${name} feed was last updated ${age}s ago, beyond maxPriceAge ${maxAge}s, so reference market creation would revert; retry after its next update`,
+      );
+    else if (age + 600n > maxAge)
+      console.log(
+        `Warning: ${name} may go stale before the reference markets are created. A stale feed stops the run before signing that step; resume after the next update.`,
+      );
+  }
+  return problems;
 }
-const blockers = [];
+/** The canonical assets must have the expected identities before any USDC is committed. */
+async function checkAssets() {
+  const problems = [];
+  for (const [key, address, symbol, decimals] of assetIdentities(manifest)) {
+    try {
+      const [s, d] = await Promise.all([
+        c.readContract({ address, abi: erc20Abi, functionName: "symbol" }),
+        c.readContract({ address, abi: erc20Abi, functionName: "decimals" }),
+      ]);
+      if (s !== symbol || Number(d) !== decimals)
+        problems.push(`${key} at ${address} reports ${s}/${d}, expected ${symbol}/${decimals}`);
+    } catch (error) {
+      problems.push(`${key} at ${address} is unreadable (${error.shortMessage ?? error.message})`);
+    }
+  }
+  return problems;
+}
+const blockers = [...(await checkAssets())];
 if (balance < required)
   blockers.push(
-    `balance ${formatEther(balance)} AVAX is below the required ${formatEther(required)} AVAX; fund ${account.address} with faucet test AVAX only`,
+    `balance ${formatEther(balance)} USDC is below the required ${formatEther(required)} USDC (gas plus seeds); fund ${account.address} with testnet USDC from https://faucet.circle.com (Arc Testnet) only`,
+  );
+if (usdcBalance < remainingSeeds)
+  blockers.push(
+    `the ERC-20 USDC balance ${formatUnits(usdcBalance, 6)} is below the ${formatUnits(remainingSeeds, 6)} USDC the market seeds need`,
   );
 if (
   replacing
     ? REFERENCE_MARKETS.some((field) => !open?.created?.[field])
     : REFERENCE_MARKETS.some((field) => !manifest[field])
-) {
-  const feedProblem = await checkFeed();
-  if (feedProblem) blockers.push(feedProblem);
-}
+)
+  blockers.push(...(await checkFeeds()));
 if (replacing) blockers.push(...(await replacementProblems()));
 /** Why a replacement round cannot run now; an open round may always resume. */
 async function replacementProblems() {
@@ -274,7 +325,7 @@ async function replacementProblems() {
   }
   if (manifest.status !== "deployed-and-verified")
     problems.push(
-      `the deployment is ${manifest.status}; run npm run verify:fuji before replacing its featured markets`,
+      `the deployment is ${manifest.status}; run npm run verify:arc-testnet before replacing its featured markets`,
     );
   const now = (await c.getBlock()).timestamp;
   const maturities = await Promise.all(
@@ -287,7 +338,7 @@ async function replacementProblems() {
   console.log(`Replacement round ${round}: the earliest featured market closes ${closes}.`);
   if (earliest - now > REPLACE_WINDOW && !force)
     problems.push(
-      `the featured markets accept protection until ${closes}; replacing them more than ${REPLACE_WINDOW / 86400n} days early spends 5 of the factory's lifetime slots for little extra time. Rerun closer to that date, or pass --force`,
+      `the featured markets accept protection until ${closes}; replacing them more than ${REPLACE_WINDOW / 86400n} days early spends 3 of the factory's lifetime slots for little extra time. Rerun closer to that date, or pass --force`,
     );
   return problems;
 }
@@ -311,7 +362,7 @@ if (!broadcast) {
   console.log(
     blockers.length
       ? `Preflight: not ready to broadcast.\n${blockers.map((b) => `  - ${b}`).join("\n")}`
-      : "Preflight: ready. --broadcast is required to spend test AVAX.",
+      : "Preflight: ready. --broadcast is required to spend testnet USDC.",
   );
   process.exit(blockers.length ? 1 : 0);
 }
@@ -321,8 +372,8 @@ if (blockers.length)
   );
 const w = createWalletClient({
   account,
-  chain: avalancheFuji,
-  transport: http(manifest.rpcUrl),
+  chain,
+  transport: http(rpcUrl),
 });
 const source = {
   commit,
@@ -345,7 +396,7 @@ if (!manifest.deploymentId) {
     throw new Error(
       'The manifest records deployment progress without a deploymentId, so its signed intents cannot be matched safely. Restore the pre-deployment manifest (docs/OPERATIONS.md, "Starting over") before broadcasting.',
     );
-  manifest.deploymentId = `fuji-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}Z-${randomBytes(3).toString("hex")}`;
+  manifest.deploymentId = `arc-testnet-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}Z-${randomBytes(3).toString("hex")}`;
   manifest.failedTransactions = [];
   manifest.source = source;
   save();
@@ -452,6 +503,7 @@ async function signIntent(label, plan, nonce) {
       data: plan.encode(deadline ?? 0n),
       value: plan.value,
       nonce,
+      ...(await fees()),
     })
     .catch((error) => {
       throw new Error(
@@ -464,7 +516,7 @@ async function signIntent(label, plan, nonce) {
     version: 1,
     label,
     deploymentId: manifest.deploymentId,
-    chainId: 43113,
+    chainId: ARC_TESTNET_ID,
     from: account.address,
     nonce,
     to: plan.to,
@@ -486,7 +538,7 @@ async function bindingProblems(intent, plan) {
   const problems = [];
   if (intent.deploymentId !== manifest.deploymentId)
     problems.push(`it belongs to deployment ${intent.deploymentId}`);
-  if (intent.chainId !== 43113)
+  if (intent.chainId !== ARC_TESTNET_ID)
     problems.push(`it targets chain ${intent.chainId}`);
   if (lower(intent.from) !== lower(account.address))
     problems.push(`it was signed by ${intent.from}`);
@@ -587,8 +639,8 @@ function recordFailure(intent, found) {
     [
       `${intent.label} was mined but reverted (tx ${signed.hash}, nonce ${intent.nonce}, block ${receipt.blockNumber}).`,
       "It is recorded under failedTransactions in the manifest and was not replayed.",
-      `Inspect the revert (explorer, or: cast run ${signed.hash} --rpc-url ${manifest.rpcUrl}), fix the cause, then resume with:`,
-      `  npm run deploy:fuji -- --broadcast --retry-reverted ${intent.label}`,
+      `Inspect the revert (explorer, or: cast run ${signed.hash} --rpc-url ${rpcUrl}), fix the cause, then resume with:`,
+      `  npm run deploy:arc-testnet -- --broadcast --retry-reverted ${intent.label}`,
     ].join("\n"),
   );
 }
@@ -809,6 +861,6 @@ if (retryLabel && !retried)
 const mined = manifest.transactions.length - recordedBefore;
 console.log(
   mined
-    ? `Deployment mined (${mined} new transaction(s)). Run npm run verify:fuji before presenting the markets as verified.`
+    ? `Deployment mined (${mined} new transaction(s)). Run npm run verify:arc-testnet before presenting the markets as verified.`
     : `Nothing to send: all ${manifest.transactions.length} steps were already recorded. Status remains ${manifest.status}.`,
 );

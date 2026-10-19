@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { RouteLink } from "./ui";
+import { localMode } from "./chain";
 
 const primary = [
   ["/markets", "Markets"],
@@ -145,7 +146,9 @@ export function Navigation() {
         </ul>
       </nav>
       <div className="sidebar-bottom">
-        <small>Arc Testnet · chain 5042002</small>
+        <small>
+          {localMode ? "Local Anvil · chain 31337" : "Arc Testnet · chain 5042002"}
+        </small>
       </div>
     </aside>
   );
