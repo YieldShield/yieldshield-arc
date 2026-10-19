@@ -9,17 +9,47 @@ export const artifact = (source, name = source) => ({
 export const planArtifacts = () => ({
   scenario: artifact("ShieldOracles", "ShieldScenarioOracle"),
   chronicle: artifact("ShieldOracles", "ShieldChronicleOracle"),
+  pythOracle: artifact("ShieldPyth", "ShieldPythOracle"),
   factory: artifact("ShieldFactory"),
   pool: artifact("ShieldPool"),
 });
+/** The reference adapter artifact the manifest's oracle provider uses ("pyth"; "chronicle" is kept as an option). */
+export const referenceArtifact = (m, a = planArtifacts()) =>
+  (m.oracle ?? "chronicle") === "pyth" ? a.pythOracle : a.chronicle;
+/** Constructor arguments of the two reference adapters. */
+export function referenceArgs(m) {
+  if ((m.oracle ?? "chronicle") === "pyth")
+    return {
+      eurcOracle: [
+        m.pyth.contract,
+        m.pyth.feeds.eurcUsd,
+        m.pyth.feeds.usdcUsd,
+        BigInt(m.pyth.maxAge),
+        BigInt(m.pyth.maxConfidenceBps),
+      ],
+      cirbtcOracle: [
+        m.pyth.contract,
+        m.pyth.feeds.btcUsd,
+        m.pyth.feeds.usdcUsd,
+        BigInt(m.pyth.maxAge),
+        BigInt(m.pyth.maxConfidenceBps),
+      ],
+    };
+  const maxAge = BigInt(m.maxPriceAge);
+  return {
+    eurcOracle: [m.chronicle.eurcUsd, m.chronicle.usdcUsd, maxAge, m.chronicle.selfKisser],
+    cirbtcOracle: [m.chronicle.cirbtcUsdc, zeroAddress, maxAge, m.chronicle.selfKisser],
+  };
+}
 /**
- * Local stand-ins for the canonical Arc assets, Chronicle feeds and SelfKisser. They are only ever deployed on
- * chain 31337 or installed with anvil_setCode on a disposable Anvil; never on Arc.
+ * Local stand-ins for the canonical Arc assets, Pyth, the Chronicle feeds and the SelfKisser. They are only ever
+ * deployed on chain 31337 or installed with anvil_setCode on a disposable Anvil; never on Arc.
  */
 export const localArtifacts = () => ({
   usdc: artifact("ShieldMocks", "MockUSDC"),
   eurc: artifact("ShieldMocks", "MockEURC"),
   cirbtc: artifact("ShieldMocks", "MockCirBTC"),
+  pyth: artifact("ShieldMocks", "MockPyth"),
   feed: artifact("ShieldMocks", "MockChronicle"),
   selfKisser: artifact("ShieldMocks", "MockSelfKisser"),
 });
@@ -54,6 +84,8 @@ export const terms = {
 };
 /** USDC the factory takes from the creator as each market's seed (ShieldFactory CREATION_SEED). */
 export const creationSeed = 5_000000n;
+/** Featured markets whose creation reads a reference price (and so, with Pyth, needs a fresh update first). */
+export const REFERENCE_MARKETS = ["eurcPool", "cirbtcPool"];
 /** Featured markets: manifest field, protected asset, oracle field. */
 export const featuredMarkets = (m) => [
   ["eurcPool", m.eurc, m.eurcOracle],
@@ -62,25 +94,19 @@ export const featuredMarkets = (m) => [
 ];
 /** USDC needed to seed every featured market. */
 export const seedTotal = creationSeed * 3n;
-/** Shared deployment plan; the executor owns signing, receipts and durable progress. */
-export async function setupMarkets({ manifest: m, account, deploy, call, save, local = false }) {
+/**
+ * Shared deployment plan; the executor owns signing, receipts and durable progress. With Pyth, `updatePrices`
+ * pushes a fresh price update immediately before every step that reads a reference price.
+ */
+export async function setupMarkets({ manifest: m, account, deploy, call, save, updatePrices, local = false }) {
   // Executors append to m.transactions only for newly mined steps.
   const recordedBefore = m.transactions.length;
   const a = planArtifacts();
-  const maxAge = BigInt(m.maxPriceAge);
+  const reference = referenceArtifact(m, a);
+  const args = referenceArgs(m);
   await deploy("scenarioOracle", a.scenario);
-  await deploy("eurcOracle", a.chronicle, [
-    m.chronicle.eurcUsd,
-    m.chronicle.usdcUsd,
-    maxAge,
-    m.chronicle.selfKisser,
-  ]);
-  await deploy("cirbtcOracle", a.chronicle, [
-    m.chronicle.cirbtcUsdc,
-    zeroAddress,
-    maxAge,
-    m.chronicle.selfKisser,
-  ]);
+  await deploy("eurcOracle", reference, args.eurcOracle);
+  await deploy("cirbtcOracle", reference, args.cirbtcOracle);
   await deploy("factory", a.factory, [
     m.usdc,
     account,
@@ -111,6 +137,7 @@ export async function setupMarkets({ manifest: m, account, deploy, call, save, l
   }
   for (const [field, asset, oracle] of pairs) {
     if (m[field]) continue;
+    if (m.oracle === "pyth" && REFERENCE_MARKETS.includes(field)) await updatePrices(`before-${field}`);
     const receipt = await run(`${field}-factory-create`, m.factory, a.factory.abi, "createPool", [
       asset,
       oracle,
@@ -153,7 +180,7 @@ export const openRound = (m) => (m.replacements ?? []).find((r) => !r.completedA
  * extended, so matured featured markets are superseded rather than renewed. The manifest keeps naming the
  * current markets until all replacements exist, then records the superseded ones in `replacements[n].retired`.
  */
-export async function replaceFeaturedMarkets({ manifest: m, account, call, read, save }) {
+export async function replaceFeaturedMarkets({ manifest: m, account, call, read, save, updatePrices }) {
   if (JSON.stringify(m.defaultTerms) !== JSON.stringify(terms))
     throw new Error(
       "The featured terms in this checkout differ from the deployed ones; replacements must use the recorded terms.",
@@ -183,6 +210,7 @@ export async function replaceFeaturedMarkets({ manifest: m, account, call, read,
   await run("factory-usdc-approve", m.usdc, erc20Abi, "approve", [m.factory, seedTotal]);
   for (const [field, asset, oracle] of markets) {
     if (round.created[field]) continue;
+    if (m.oracle === "pyth" && REFERENCE_MARKETS.includes(field)) await updatePrices(`${prefix}before-${field}`);
     const receipt = await run(`${field}-factory-create`, m.factory, a.factory.abi, "createPool", [
       asset,
       oracle,

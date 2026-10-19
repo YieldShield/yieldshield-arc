@@ -1,6 +1,6 @@
 /**
- * Local-only lifecycle on a disposable Anvil (chain 31337, port 8567) with stand-ins for Arc USDC, EURC, cirBTC,
- * the Chronicle feeds and the SelfKisser. Writes source-hash-bound evidence to docs/evidence/local-journey.json.
+ * Local-only lifecycle on a disposable Anvil (chain 31337, port 8567) with stand-ins for Arc USDC, EURC, cirBTC
+ * and Pyth (MockPyth). Like on Arc, every step that reads a reference price is preceded by a Pyth update. Writes source-hash-bound evidence to docs/evidence/local-journey.json.
  * Never touches Arc testnet. `--browser-ready` then resets the chain and prepares fresh markets for browser tests.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -9,7 +9,8 @@ import { execFileSync } from "node:child_process";
 import { createPublicClient, createWalletClient, http, keccak256, toHex, zeroAddress } from "viem";
 import { foundry } from "viem/chains";
 import { setupMarkets, localArtifacts, terms } from "./setup-markets.mjs";
-import { LOCAL_RPC, chronicleAbi, erc20Abi } from "./arc-config.mjs";
+import { LOCAL_RPC, erc20Abi } from "./arc-config.mjs";
+import { feedIds, mockUpdate, pythAbi } from "./price-updates.mjs";
 process.chdir(fileURLToPath(new URL("../", import.meta.url)));
 const c = createPublicClient({ chain: foundry, transport: http(LOCAL_RPC) });
 if ((await c.getChainId()) !== 31337) throw new Error("Local-only chain guard: expected Anvil chain 31337 on port 8567");
@@ -22,11 +23,11 @@ const CONTRACT_FIELDS = [
   "cirbtcPool",
   "scenarioPool",
 ];
-/** Starting prices, 18 decimals like Chronicle: EURC/USD 1.10, USDC/USD 1.00, CIRBTC/USDC 81,827.183708. */
+/** Starting Pyth prices (expo -8): EURC/USD 1.10, USDC/USD 1.00, BTC/USD 81,827.183708. */
 const PRICES = {
-  eurcUsd: 1_100000000000000000n,
-  usdcUsd: 1_000000000000000000n,
-  cirbtcUsdc: 81827_183708000000000000n,
+  eurcUsd: { price: 110000000n, conf: 10000n, expo: -8 },
+  usdcUsd: { price: 100000000n, conf: 10000n, expo: -8 },
+  btcUsd: { price: 8182718370800n, conf: 400000000n, expo: -8 },
 };
 await c.request({ method: "anvil_reset", params: [] });
 const accounts = await c.request({ method: "eth_accounts", params: [] });
@@ -93,40 +94,56 @@ async function prepare(funded) {
   manifest.usdc = await deployTo("local-usdc-stand-in", l.usdc);
   manifest.eurc = await deployTo("local-eurc-stand-in", l.eurc);
   manifest.cirbtc = await deployTo("local-cirbtc-stand-in", l.cirbtc);
-  manifest.chronicle = {
-    eurcUsd: await deployTo("local-chronicle-eurc-usd", l.feed),
-    usdcUsd: await deployTo("local-chronicle-usdc-usd", l.feed),
-    cirbtcUsdc: await deployTo("local-chronicle-cirbtc-usdc", l.feed),
-    selfKisser: await deployTo("local-self-kisser", l.selfKisser),
-  };
-  for (const [key, value] of Object.entries(PRICES))
-    await run(`local-feed-${key}`, manifest.chronicle[key], chronicleAbi, "set", [value, await now()]);
+  manifest.oracle = "pyth";
+  manifest.pyth = { ...template.pyth, contract: await deployTo("local-pyth-stand-in", l.pyth), mock: true };
+  await run("local-pyth-fee", manifest.pyth.contract, pythAbi, "setFee", [1n]);
+  for (const [key, p] of Object.entries(PRICES))
+    await run(`local-pyth-${key}`, manifest.pyth.contract, pythAbi, "setPrice", [
+      manifest.pyth.feeds[key],
+      p.price,
+      p.conf,
+      p.expo,
+      await now(),
+    ]);
   for (const who of funded) {
     await run(`local-mint-usdc-${who.slice(0, 8)}`, manifest.usdc, erc20Abi, "mint", [who, 1000_000000n]);
     await run(`local-mint-eurc-${who.slice(0, 8)}`, manifest.eurc, erc20Abi, "mint", [who, 1000_000000n]);
     await run(`local-mint-cirbtc-${who.slice(0, 8)}`, manifest.cirbtc, erc20Abi, "mint", [who, 1_00000000n]);
   }
   save();
-  return setupMarkets({ manifest, account, deploy, call, save, local: true });
+  return setupMarkets({ manifest, account, deploy, call, save, updatePrices: () => refreshFeeds(), local: true });
+}
+/** Pushes a MockPyth update stamped with the latest block time, with optional new prices by manifest feed key. */
+async function refreshFeeds(changes = {}) {
+  const overrides = Object.fromEntries(
+    Object.entries(changes).map(([key, p]) => [manifest.pyth.feeds[key], { ...PRICES[key], ...p }]),
+  );
+  const update = await mockUpdate(read, manifest.pyth.contract, feedIds(manifest), await now(), overrides);
+  const fee = await read(manifest.pyth.contract, pythAbi, "getUpdateFee", [update.data]);
+  return call("pyth-update", {
+    address: manifest.pyth.contract,
+    abi: pythAbi,
+    functionName: "updatePriceFeeds",
+    args: [update.data],
+    value: fee,
+  });
 }
 const a = await prepare([account, holder]);
 const fixtureTransactions = manifest.transactions.length;
 const observations = [];
-const refreshFeeds = async (overrides = {}) => {
-  for (const [key, value] of Object.entries({ ...PRICES, ...overrides }))
-    await run(`refresh-feed-${key}`, manifest.chronicle[key], chronicleAbi, "set", [value, await now()]);
-};
 let dead = () => now().then((t) => t + 600n);
 // EURC reference market: provider capital, protection, a gain exit with fees, transfer and a backing exit.
 await run("provider-usdc-approve-eurc", manifest.usdc, erc20Abi, "approve", [manifest.eurcPool, 100_000000n]);
+await refreshFeeds();
 await run("provider-deposit-eurc", manifest.eurcPool, a.pool.abi, "depositJuniorBounded", [100_000000n, 1n, await dead()]);
 await run("holder-eurc-approve", manifest.eurc, erc20Abi, "approve", [manifest.eurcPool, 50_000000n], h);
+await refreshFeeds();
 await run("holder-protect-eurc", manifest.eurcPool, a.pool.abi, "protect", [50_000000n, 55_000000n, await dead()], h);
 const [, , floor] = await read(manifest.eurcPool, a.pool.abi, "positions", [1n]);
 if (floor !== 55_000000n) throw new Error(`Expected a 55 USDC entry claim for 50 EURC at 1.10, got ${floor}`);
 observations.push("50 EURC at 1.10 USDC opened a 55.000000 USDC entry claim (6-decimal asset, 6-decimal backing)");
 await step(61);
-await refreshFeeds({ eurcUsd: 1_320000000000000000n });
+await refreshFeeds({ eurcUsd: { price: 132000000n } });
 const [assetOut, fee] = await read(manifest.eurcPool, a.pool.abi, "previewPartialExit", [1n, 25_000000n]);
 await run("holder-partial-asset-exit-eurc", manifest.eurcPool, a.pool.abi, "partialExitAsset", [1n, 25_000000n, assetOut, await dead()], h);
 observations.push(`a +20% EUR move: exiting 25 EURC returned ${assetOut} units and charged ${fee} units of gain fees`);
@@ -144,16 +161,16 @@ await run("creator-protocol-pull-fees", manifest.eurcPool, a.pool.abi, "claimFee
 await run("provider-usdc-approve-cirbtc", manifest.usdc, erc20Abi, "approve", [manifest.cirbtcPool, 100_000000n]);
 await run("provider-deposit-cirbtc", manifest.cirbtcPool, a.pool.abi, "depositJuniorBounded", [100_000000n, 1n, await dead()]);
 await run("holder-cirbtc-approve", manifest.cirbtc, erc20Abi, "approve", [manifest.cirbtcPool, 50000n], h);
+await refreshFeeds();
 await run("holder-protect-cirbtc", manifest.cirbtcPool, a.pool.abi, "protect", [50000n, 1n, await dead()], h);
-await step(61);
-const staleAt = (await now()) - BigInt(manifest.maxPriceAge) - 1n;
-await run("age-cirbtc-feed-past-limit", manifest.chronicle.cirbtcUsdc, chronicleAbi, "set", [PRICES.cirbtcUsdc, staleAt]);
+// No update for longer than the adapter's maxAge: the price is stale.
+await step(Number(manifest.pyth.maxAge) + 1);
 const staleRevert = await c
   .simulateContract({ account: holder, address: manifest.cirbtcPool, abi: a.pool.abi, functionName: "exitAsset", args: [1n, 0n] })
   .then(() => null, (error) => error.shortMessage ?? error.message);
 if (!staleRevert || !/INVALID_OR_STALE_PRICE/.test(staleRevert))
   throw new Error(`Expected a stale-price revert, got: ${staleRevert}`);
-observations.push("with the cirBTC feed older than maxPriceAge, exitAsset reverted with INVALID_OR_STALE_PRICE");
+observations.push("with no Pyth update for longer than maxAge (120 s), exitAsset reverted with INVALID_OR_STALE_PRICE");
 await run("holder-cirbtc-backing-exit-while-stale", manifest.cirbtcPool, a.pool.abi, "exitBacking", [1n], h);
 observations.push("while stale, exitBacking still paid the fixed USDC claim for 0.0005 cirBTC");
 await refreshFeeds();
@@ -172,7 +189,9 @@ for (const file of [
   "contracts/src/ShieldPool.sol",
   "contracts/src/ShieldFactory.sol",
   "contracts/src/ShieldOracles.sol",
+  "contracts/src/ShieldPyth.sol",
   "contracts/test/ShieldMocks.sol",
+  "scripts/price-updates.mjs",
   "scripts/setup-markets.mjs",
   "scripts/local-journey.mjs",
 ])
@@ -186,7 +205,8 @@ writeFileSync(
   "docs/evidence/local-journey.json",
   JSON.stringify(
     {
-      network: "Local Anvil only (chain 31337); not Arc testnet. Assets, feeds and SelfKisser are local stand-ins.",
+      network: "Local Anvil only (chain 31337); not Arc testnet. Assets and Pyth are local stand-ins (MockPyth).",
+      oracle: "pyth",
       chainId: 31337,
       createdAt: new Date().toISOString(),
       parentCommit: commit,
@@ -195,12 +215,12 @@ writeFileSync(
       fixtureTransactions,
       journeyTransactions: manifest.transactions.length - fixtureTransactions,
       tests: [
-        "local stand-ins at fresh addresses, then the shared Arc deployment plan (8 steps)",
+        "local stand-ins at fresh addresses, then the shared Arc deployment plan with a Pyth update before each reference market creation",
         "factory-seeded EURC, cirBTC and scenario markets",
         "provider USDC deposit, EURC protection, partial gain exit and independent reward claim",
         "ownership transfer preserves entry basis; new owner's backing exit",
         "provider notice and partial basket redemption; creator and protocol pull fees",
-        "8-decimal cirBTC protection; stale feed blocks the asset exit but not the backing exit",
+        "8-decimal cirBTC protection after a Pyth update; once the price is older than 120 s the asset exit reverts but the backing exit pays",
         "permissionless maturity settlement and the owner's segregated claim",
       ],
       observations,

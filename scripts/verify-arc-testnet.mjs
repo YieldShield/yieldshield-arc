@@ -12,6 +12,7 @@ import {
   artifactProvenance,
   featuredMarkets,
   planArtifacts,
+  referenceArtifact,
   terms,
   creationSeed,
 } from "./setup-markets.mjs";
@@ -54,7 +55,9 @@ else {
 }
 const pool = artifacts.pool.abi,
   factory = artifacts.factory.abi,
-  adapter = artifacts.chronicle.abi;
+  reference = referenceArtifact(m, artifacts),
+  adapter = reference.abi,
+  pyth = (m.oracle ?? "chronicle") === "pyth";
 /** Runtime code with every immutable slot zeroed, as listed in the artifact. */
 function masked(code, a) {
   let out = code.toLowerCase();
@@ -98,14 +101,14 @@ const eventsFrom = (receipt, address, abi, eventName) =>
 // 1. Runtime code of everything the plan deployed and the factory created.
 for (const [field, key] of [
   ["scenarioOracle", "scenario"],
-  ["eurcOracle", "chronicle"],
-  ["cirbtcOracle", "chronicle"],
+  ["eurcOracle", "reference"],
+  ["cirbtcOracle", "reference"],
   ["factory", "factory"],
   ["eurcPool", "pool"],
   ["cirbtcPool", "pool"],
   ["scenarioPool", "pool"],
 ])
-  await checkRuntime(field, m[field], artifacts[key]);
+  await checkRuntime(field, m[field], key === "reference" ? reference : artifacts[key]);
 pass("runtime code of 3 oracles, the factory and 3 pools matches contracts/out (immutables masked)");
 // 2. Canonical assets.
 for (const [key, address, symbol, decimals] of assetIdentities(m)) {
@@ -128,33 +131,57 @@ for (const [field, name] of [
 if ((await read(m.factory, factory, "CREATION_SEED")) !== creationSeed)
   throw new Error("Factory creation seed differs from the plan");
 pass("factory backing, protocol, assets, oracles and creation seed");
-// 4. Reference adapters: feeds, freshness limit, decimals and Chronicle whitelisting.
+// 4. Reference adapters: provider, feeds, freshness limit and (Chronicle) whitelisting.
 const zero = "0x0000000000000000000000000000000000000000";
-for (const [field, feed, quote] of [
-  ["eurcOracle", m.chronicle.eurcUsd, m.chronicle.usdcUsd],
-  ["cirbtcOracle", m.chronicle.cirbtcUsdc, zero],
-]) {
-  const address = m[field];
-  const [f, q, maxAge] = await Promise.all([
-    read(address, adapter, "feed"),
-    read(address, adapter, "quote"),
-    read(address, adapter, "maxAge"),
-  ]);
-  if (!same(f, feed) || !same(q, quote)) throw new Error(`${field} reads unexpected feeds`);
-  if (maxAge !== BigInt(m.maxPriceAge)) throw new Error(`${field} maximum price age differs from the manifest`);
-  for (const source of [feed, quote].filter((x) => x !== zero))
-    if (!(await read(source, chronicleAbi, "tolled", [address])))
-      throw new Error(`${field} is not whitelisted on Chronicle feed ${source}`);
+async function reportPrice(field, address) {
   try {
-    const [price, age] = await Promise.all([read(address, adapter, "price"), read(address, adapter, "age")]);
+    const [price, age, maxAge] = await Promise.all(
+      ["price", "age", "maxAge"].map((n) => read(address, adapter, n)),
+    );
     console.log(`${field}: ${Number(price) / 1e6} USDC per unit, oldest feed value ${age}s old (limit ${maxAge}s).`);
   } catch (error) {
     console.log(
-      `Warning: ${field} has no usable price right now (${error.shortMessage ?? error.message}); new protection and asset exits revert until Chronicle updates.`,
+      `Note: ${field} has no usable price right now (${error.shortMessage ?? error.message}). ${pyth ? "Pyth is a pull oracle: callers push an update before acting." : "New protection and asset exits revert until Chronicle updates."}`,
     );
   }
 }
-pass("reference adapters read the manifest's Chronicle feeds with the manifest's maxPriceAge and are whitelisted");
+if (pyth) {
+  for (const [field, feed] of [
+    ["eurcOracle", m.pyth.feeds.eurcUsd],
+    ["cirbtcOracle", m.pyth.feeds.btcUsd],
+  ]) {
+    const address = m[field];
+    const [p, f, q, maxAge, conf] = await Promise.all(
+      ["pyth", "feedId", "quoteId", "maxAge", "maxConfidenceBps"].map((n) => read(address, adapter, n)),
+    );
+    if (!same(p, m.pyth.contract)) throw new Error(`${field} reads an unexpected Pyth contract`);
+    if (f.toLowerCase() !== feed.toLowerCase() || q.toLowerCase() !== m.pyth.feeds.usdcUsd.toLowerCase())
+      throw new Error(`${field} reads unexpected Pyth feeds`);
+    if (maxAge !== BigInt(m.pyth.maxAge) || conf !== BigInt(m.pyth.maxConfidenceBps))
+      throw new Error(`${field} freshness or confidence limit differs from the manifest`);
+    await reportPrice(field, address);
+  }
+  pass("Pyth adapters read the manifest's Pyth contract and feeds (asset / USDC-USD) with its maxAge and confidence limit");
+} else {
+  for (const [field, feed, quote] of [
+    ["eurcOracle", m.chronicle.eurcUsd, m.chronicle.usdcUsd],
+    ["cirbtcOracle", m.chronicle.cirbtcUsdc, zero],
+  ]) {
+    const address = m[field];
+    const [f, q, maxAge] = await Promise.all([
+      read(address, adapter, "feed"),
+      read(address, adapter, "quote"),
+      read(address, adapter, "maxAge"),
+    ]);
+    if (!same(f, feed) || !same(q, quote)) throw new Error(`${field} reads unexpected feeds`);
+    if (maxAge !== BigInt(m.maxPriceAge)) throw new Error(`${field} maximum price age differs from the manifest`);
+    for (const source of [feed, quote].filter((x) => x !== zero))
+      if (!(await read(source, chronicleAbi, "tolled", [address])))
+        throw new Error(`${field} is not whitelisted on Chronicle feed ${source}`);
+    await reportPrice(field, address);
+  }
+  pass("reference adapters read the manifest's Chronicle feeds with the manifest's maxPriceAge and are whitelisted");
+}
 // 5. Featured markets: identity, terms, open epoch and creation receipts.
 const termKeys = Object.keys(terms);
 if (!m.defaultTerms || termKeys.some((k) => m.defaultTerms[k] === undefined))

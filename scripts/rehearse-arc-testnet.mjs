@@ -1,7 +1,7 @@
 /**
  * Full deploy + verify rehearsal against a disposable Anvil that uses Arc testnet's chain ID (5042002) and
  * minimum base fee (20 gwei), with local stand-ins installed at the CANONICAL Arc addresses (USDC, EURC, cirBTC,
- * the three Chronicle feeds and the SelfKisser). Runs the real deploy-arc-testnet.mjs and verify-arc-testnet.mjs
+ * Pyth, the three Chronicle feeds and the SelfKisser). Pyth updates are MockPyth data (ARC_PRICE_SOURCE=mock). Runs the real deploy-arc-testnet.mjs and verify-arc-testnet.mjs
  * through their loopback-only rehearsal overrides, with a disposable signer under .local/rehearsal/.
  * Writes docs/evidence/arc-rehearsal.json. Nothing is sent to Arc testnet.
  */
@@ -12,6 +12,7 @@ import { createPublicClient, createWalletClient, http, keccak256, parseTransacti
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { localArtifacts } from "./setup-markets.mjs";
 import { ARC_TESTNET_ID, LOCAL_RPC, MIN_BASE_FEE, arcTestnet, chronicleAbi, erc20Abi } from "./arc-config.mjs";
+import { pythAbi } from "./price-updates.mjs";
 process.chdir(fileURLToPath(new URL("../", import.meta.url)));
 const dir = ".local/rehearsal";
 rmSync(dir, { recursive: true, force: true });
@@ -41,6 +42,7 @@ const installs = [
   ["USDC", template.usdc, l.usdc],
   ["EURC", template.eurc, l.eurc],
   ["cirBTC", template.cirbtc, l.cirbtc],
+  ["Pyth", template.pyth.contract, l.pyth],
   ["Chronicle EURC/USD", template.chronicle.eurcUsd, l.feed],
   ["Chronicle USDC/USD", template.chronicle.usdcUsd, l.feed],
   ["Chronicle CIRBTC/USDC", template.chronicle.cirbtcUsdc, l.feed],
@@ -54,7 +56,12 @@ const send = async (address, abi, functionName, args) => {
   if (r.status !== "success") throw new Error(`${functionName} on ${address} reverted`);
 };
 const now = (await c.getBlock()).timestamp;
-// Values read from the real feeds on 19 October 2026 (18 decimals), stamped fresh.
+// Pyth: 1 wei per price like Arc testnet's contract; values of the shape Pyth publishes (expo -8), stamped fresh.
+await send(template.pyth.contract, pythAbi, "setFee", [1n]);
+await send(template.pyth.contract, pythAbi, "setPrice", [template.pyth.feeds.eurcUsd, 116524999n, 121170n, -8, now]);
+await send(template.pyth.contract, pythAbi, "setPrice", [template.pyth.feeds.usdcUsd, 99994808n, 36282n, -8, now]);
+await send(template.pyth.contract, pythAbi, "setPrice", [template.pyth.feeds.btcUsd, 8539753395754n, 2780604245n, -8, now]);
+// Chronicle values read from the real feeds on 19 October 2026 (18 decimals), stamped fresh (Chronicle option).
 await send(template.chronicle.eurcUsd, chronicleAbi, "set", [1_123300126579703113n, now]);
 await send(template.chronicle.usdcUsd, chronicleAbi, "set", [999837840390000000n, now]);
 await send(template.chronicle.cirbtcUsdc, chronicleAbi, "set", [81827183708578801548325n, now]);
@@ -77,6 +84,7 @@ const env = {
   ARC_RPC_URL: LOCAL_RPC,
   ARC_SIGNER_FILE: `${dir}/signer.json`,
   ARC_INTENTS_DIR: `${dir}/transactions`,
+  ARC_PRICE_SOURCE: "mock",
 };
 const runScript = (script, args = []) => {
   const r = spawnSync("node", [script, ...args], { env, encoding: "utf8" });
@@ -135,11 +143,14 @@ for (const file of [
   "scripts/verify-arc-testnet.mjs",
   "scripts/rehearse-arc-testnet.mjs",
   "scripts/testnet-journey.mjs",
+  "scripts/price-updates.mjs",
+  "contracts/src/ShieldPyth.sol",
 ])
   sourceHash[file] = keccak256(toHex(readFileSync(file)));
 const evidence = {
   network:
-    "Local Anvil with Arc testnet's chain ID 5042002 and 20 gwei base fee; local stand-ins installed at the canonical Arc USDC, EURC, cirBTC, Chronicle feed and SelfKisser addresses. NOT Arc testnet.",
+    "Local Anvil with Arc testnet's chain ID 5042002 and 20 gwei base fee; local stand-ins installed at the canonical Arc USDC, EURC, cirBTC, Pyth (MockPyth data), Chronicle feed and SelfKisser addresses. NOT Arc testnet.",
+  oracle: template.oracle,
   chainId: ARC_TESTNET_ID,
   createdAt: new Date().toISOString(),
   parentCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),

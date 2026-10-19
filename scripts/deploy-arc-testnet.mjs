@@ -4,8 +4,13 @@
  * Every transaction is signed by the dedicated test signer in the ignored .secrets/ directory, saved as a
  * bound intent before it is sent, and recorded in config/deployment.json once mined. See docs/OPERATIONS.md.
  *
- * Rehearsal only: ARC_MANIFEST, ARC_RPC_URL, ARC_SIGNER_FILE and ARC_INTENTS_DIR may point the same code at a
- * disposable chain-5042002 Anvil. They are refused unless ARC_RPC_URL is a loopback address.
+ * Rehearsal only: ARC_MANIFEST, ARC_RPC_URL, ARC_SIGNER_FILE, ARC_INTENTS_DIR and ARC_PRICE_SOURCE=mock may point
+ * the same code at a disposable chain-5042002 Anvil with MockPyth. They are refused unless ARC_RPC_URL is a
+ * loopback address.
+ *
+ * With the Pyth oracle (the manifest default), every step that reads a reference price is preceded by an
+ * `updatePriceFeeds{value: fee}` transaction carrying fresh Hermes data, and the preflight simulates such an
+ * update before anything is sent. Hermes needs PYTH_API_KEY or .secrets/pyth-api-key.
  */
 import {
   readFileSync,
@@ -34,7 +39,9 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { fileURLToPath } from "node:url";
+import { feedIds, hermesUpdate, mockUpdate, pythAbi, pythApiKey, quotient } from "./price-updates.mjs";
 import {
+  REFERENCE_MARKETS,
   artifactProvenance,
   featuredMarkets,
   openRound,
@@ -74,18 +81,18 @@ const DEADLINE_WINDOW = 3600n;
 /** An unsent intent this close to its deadline is re-signed instead of rebroadcast. */
 const DEADLINE_MARGIN = 300n;
 /**
- * Sum of the gas limits of all 8 plan steps (13.42M; 13.28M used), measured by `npm run rehearse:arc-testnet`
- * (a full broadcast against a chain-5042002 Anvil with stand-ins at the canonical addresses). Remeasure when
- * contracts or the plan change.
+ * Funding estimate for the 10 plan steps: 17.55M of signed gas limits (13.36M used, 30% per-transaction margin)
+ * measured by `npm run rehearse:arc-testnet` against MockPyth, plus about 1M for the two real Pyth updates, whose
+ * Wormhole verification costs more gas than MockPyth. Remeasure when contracts or the plan change.
  */
-const PLAN_GAS = 13_450_000n;
+const PLAN_GAS = 18_500_000n;
 const GAS_HEADROOM_PERCENT = 130n;
-/** Gas limits of a replacement round: one approval and three creations (8.16M in the rehearsal). */
-const REPLACEMENT_GAS = 8_200_000n;
+/** Every transaction's gas limit is its estimate plus this margin: a mined oracle read can cost more than estimated. */
+const GAS_MARGIN_PERCENT = 130n;
+/** Gas limits of a replacement round: one approval, two Pyth updates and three creations, with the 30% margin. */
+const REPLACEMENT_GAS = 11_000_000n;
 /** A new replacement round starts only once a featured market closes within this window. */
 const REPLACE_WINDOW = 7n * 86400n;
-/** Markets whose creation reads a Chronicle-backed reference adapter. */
-const REFERENCE_MARKETS = ["eurcPool", "cirbtcPool"];
 const POLL_MS = 1500;
 const WAIT_TIMEOUT_MS = 10 * 60 * 1000;
 const CONTRACT_FIELDS = [
@@ -102,12 +109,14 @@ const overrides = {
   rpcUrl: process.env.ARC_RPC_URL,
   signer: process.env.ARC_SIGNER_FILE,
   intents: process.env.ARC_INTENTS_DIR,
+  priceSource: process.env.ARC_PRICE_SOURCE,
 };
 const rehearsal = Object.values(overrides).some(Boolean);
 if (rehearsal && !isLoopback(overrides.rpcUrl ?? ""))
   throw new Error(
-    "ARC_MANIFEST, ARC_RPC_URL, ARC_SIGNER_FILE and ARC_INTENTS_DIR are rehearsal overrides and require a loopback ARC_RPC_URL.",
+    "ARC_MANIFEST, ARC_RPC_URL, ARC_SIGNER_FILE, ARC_INTENTS_DIR and ARC_PRICE_SOURCE are rehearsal overrides and require a loopback ARC_RPC_URL.",
   );
+const usePyth = manifest => (manifest.oracle ?? "chronicle") === "pyth";
 const manifestPath = overrides.manifest ?? "config/deployment.json";
 const manifest = JSON.parse(readFileSync(manifestPath));
 const save = () =>
@@ -229,6 +238,70 @@ if (legacyIntents.length)
   console.log(
     `Ignoring ${legacyIntents.length} unbound intent file(s) directly in ${intentsRoot}/. They are never reused; check on the explorer that none is pending before archiving them.`,
   );
+/** Fresh Pyth update data for the three feeds: Hermes on Arc testnet, MockPyth only in a loopback rehearsal. */
+async function priceUpdate() {
+  const ids = feedIds(manifest);
+  if (overrides.priceSource === "mock")
+    return mockUpdate(
+      (address, abi, functionName, args) => c.readContract({ address, abi, functionName, args }),
+      manifest.pyth.contract,
+      ids,
+      (await c.getBlock()).timestamp,
+    );
+  return hermesUpdate(manifest.pyth.hermes, ids, pythApiKey());
+}
+/**
+ * Mirrors ShieldPythOracle: fetches fresh update data, checks it, prices both markets from it, and simulates
+ * `updatePriceFeeds` on chain (eth_call, free) so an update the Arc testnet contract rejects is caught before
+ * any USDC is spent.
+ */
+async function checkPyth() {
+  const problems = [];
+  const code = await c.getCode({ address: manifest.pyth.contract });
+  if (!code || code === "0x") return [`no contract at the Pyth address ${manifest.pyth.contract}`];
+  let update;
+  try {
+    update = await priceUpdate();
+  } catch (error) {
+    return [error.message];
+  }
+  const now = (await c.getBlock()).timestamp;
+  const byId = Object.fromEntries(update.parsed.map((p) => [p.id.toLowerCase(), p]));
+  const [eurc, usdc, btc] = feedIds(manifest).map((id) => byId[id.toLowerCase()]);
+  for (const [name, p] of [["EURC/USD", eurc], ["USDC/USD", usdc], ["BTC/USD", btc]]) {
+    if (!p) {
+      problems.push(`the price update has no ${name} value`);
+      continue;
+    }
+    const lag = now > p.publishTime ? now - p.publishTime : 0n;
+    console.log(
+      `Pyth ${name}: ${Number(p.price) * 10 ** p.expo} (conf ${Number(p.conf) * 10 ** p.expo}), published ${lag}s before the latest block.`,
+    );
+    if (p.price <= 0n || p.expo > 0 || p.expo < -18) problems.push(`the Pyth ${name} value is invalid`);
+    else if (p.conf === 0n || p.conf * 10000n > p.price * BigInt(manifest.pyth.maxConfidenceBps))
+      problems.push(`the Pyth ${name} confidence is wider than ${manifest.pyth.maxConfidenceBps} bps`);
+    if (lag + 60n > BigInt(manifest.pyth.maxAge)) problems.push(`the Pyth ${name} update is already ${lag}s old`);
+  }
+  if (eurc && usdc && btc)
+    console.log(
+      `From this update: ${formatUnits(quotient(eurc, usdc), 6)} USDC per EURC, ${formatUnits(quotient(btc, usdc), 6)} USDC per cirBTC.`,
+    );
+  try {
+    const fee = await c.readContract({ address: manifest.pyth.contract, abi: pythAbi, functionName: "getUpdateFee", args: [update.data] });
+    await c.call({
+      account: account.address,
+      to: manifest.pyth.contract,
+      data: encodeFunctionData({ abi: pythAbi, functionName: "updatePriceFeeds", args: [update.data] }),
+      value: fee,
+    });
+    console.log(`Simulated updatePriceFeeds succeeded on chain; fee ${fee} wei of native USDC.`);
+  } catch (error) {
+    problems.push(
+      `the Pyth contract rejected a simulated update (${reason(error)}); its payload format may not match this contract generation, so nothing will be sent`,
+    );
+  }
+  return problems;
+}
 /** Mirrors ShieldChronicleOracle.price(): reference markets cannot be created on a stale feed. */
 async function checkFeeds() {
   const problems = [];
@@ -297,7 +370,7 @@ if (
     ? REFERENCE_MARKETS.some((field) => !open?.created?.[field])
     : REFERENCE_MARKETS.some((field) => !manifest[field])
 )
-  blockers.push(...(await checkFeeds()));
+  blockers.push(...(usePyth(manifest) ? await checkPyth() : await checkFeeds()));
 if (replacing) blockers.push(...(await replacementProblems()));
 /** Why a replacement round cannot run now; an open round may always resume. */
 async function replacementProblems() {
@@ -496,15 +569,20 @@ function describe(request) {
 async function signIntent(label, plan, nonce) {
   const deadline =
     plan.deadlineIndex < 0 ? null : (await latestTimestamp()) + DEADLINE_WINDOW;
-  const prepared = await w
-    .prepareTransactionRequest({
-      account,
-      to: plan.to ?? undefined,
-      data: plan.encode(deadline ?? 0n),
-      value: plan.value,
-      nonce,
-      ...(await fees()),
-    })
+  const data = plan.encode(deadline ?? 0n);
+  const prepared = await c
+    .estimateGas({ account: account.address, to: plan.to ?? undefined, data, value: plan.value })
+    .then(async (estimate) =>
+      w.prepareTransactionRequest({
+        account,
+        to: plan.to ?? undefined,
+        data,
+        value: plan.value,
+        nonce,
+        gas: (estimate * GAS_MARGIN_PERCENT) / 100n,
+        ...(await fees()),
+      }),
+    )
     .catch((error) => {
       throw new Error(
         `${label}: the node rejected this step while estimating gas, so nothing was signed or sent: ${reason(error)}`,
@@ -816,6 +894,20 @@ async function send(label, request) {
   console.log(`${label}: ${found.signed.hash}`);
   return found.receipt;
 }
+let updateCount = 0;
+/**
+ * Pushes fresh Pyth data right before a step that reads a reference price. Every update is its own signed,
+ * recorded step with a never-reused label, because its calldata is new each time.
+ */
+async function updatePrices(context) {
+  const existing = readdirSync(intentDir).filter((f) => /^pyth-update-\d+\.json$/.test(f)).length;
+  const label = `pyth-update-${Math.max(existing, updateCount) + 1}`;
+  updateCount = Math.max(existing, updateCount) + 1;
+  const update = await priceUpdate();
+  const fee = await c.readContract({ address: manifest.pyth.contract, abi: pythAbi, functionName: "getUpdateFee", args: [update.data] });
+  console.log(`${label} (${context}): pushing ${update.parsed.length} Pyth prices, fee ${fee} wei.`);
+  await send(label, { address: manifest.pyth.contract, abi: pythAbi, functionName: "updatePriceFeeds", args: [update.data], value: fee });
+}
 async function deploy(field, artifact, args = []) {
   if (manifest[field]) {
     const code = await c.getCode({ address: manifest[field] });
@@ -840,6 +932,7 @@ if (replacing) {
     read: (address, abi, functionName, args = []) =>
       c.readContract({ address, abi, functionName, args }),
     save: async () => save(),
+    updatePrices,
   });
   console.log(
     `Replacement round ${done.round} switched the featured markets: ${featuredMarkets(manifest)
@@ -853,6 +946,7 @@ if (replacing) {
     deploy,
     save: async () => save(),
     call: send,
+    updatePrices,
   });
 if (retryLabel && !retried)
   console.log(
