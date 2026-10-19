@@ -51,7 +51,9 @@ export function Agents() {
               Output unsigned transactions with value 0 on chain{" "}
               {manifest.network.chainId}.
             </li>
-            <li>Refuse stale prices; never use the scenario price as a reference.</li>
+            <li>
+              Refuse stale prices; never use the scenario price as a reference.
+            </li>
             <li>Simulate every call from the user&apos;s address first.</li>
             <li>Testnet only: test tokens have no monetary value.</li>
           </ul>

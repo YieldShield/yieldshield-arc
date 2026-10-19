@@ -24,6 +24,11 @@ test("exits use only realized positive gains and the asset's own unit", () => {
     exitPreview(100000n, 81_827183n, 163654_367416n, CIRBTC).fee,
     6000n,
   );
+  // A community market with 15% provider and 3% creator fees: 19% of the gain, each part rounded down.
+  assert.equal(
+    exitPreview(100_000000n, 110_000000n, 2_200000n, EURC, 1500n, 300n).fee,
+    9_500000n,
+  );
 });
 test("entry claims are priced per whole asset unit", () => {
   assert.equal(entryClaim(100_000000n, 1_100000n, EURC), 110_000000n);

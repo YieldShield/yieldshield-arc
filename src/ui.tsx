@@ -231,7 +231,7 @@ export function MarketCard({
   headingLevel?: 2 | 3;
 }) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
-  const { snapshots, ready, loading, errors } = useShield();
+  const { snapshots, ready, loading, errors, chainTime } = useShield();
   const s = snapshots[market.key],
     asset = assets.find((a) => a.key === market.asset)!;
   return (
@@ -258,25 +258,29 @@ export function MarketCard({
         </span>
       </div>
       <Heading>{market.name}</Heading>
-      <p className="card-description">
-        {asset.symbol} protected by USDC
-      </p>
+      <p className="card-description">{asset.symbol} protected by USDC</p>
       <div className="price-source">{market.source}</div>
       <Facts
         items={[
           [
             `Price · USDC per ${asset.symbol}`,
-            s?.price ? fmt(s.price, 6, 6) : "Unavailable",
+            s?.price
+              ? fmt(s.price, 6, 6)
+              : s?.lastPrice
+                ? `${fmt(s.lastPrice, 6, 6)} · last pushed`
+                : "Unavailable",
           ],
           [
             "Price freshness",
             market.synthetic
               ? "Synthetic scenario"
-              : s?.oracleAge != null && s?.maxAge != null
-                ? `${formatAge(s.oracleAge)} old · limit ${formatAge(s.maxAge)}`
-                : s?.oracleError
-                  ? "Stale or unavailable"
-                  : "Unavailable",
+              : s?.publishTime != null && s?.maxAge != null && chainTime > 0n
+                ? `Pyth published ${formatAge(chainTime > s.publishTime ? chainTime - s.publishTime : 0n)} ago · limit ${formatAge(s.maxAge)} · each action pushes a fresh price`
+                : s?.oracleAge != null && s?.maxAge != null
+                  ? `${formatAge(s.oracleAge)} old · limit ${formatAge(s.maxAge)}`
+                  : s?.oracleError
+                    ? "Stale or unavailable"
+                    : "Unavailable",
           ],
           [
             "Available entry claims",

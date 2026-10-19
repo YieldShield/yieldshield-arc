@@ -78,7 +78,10 @@ export function Portfolio() {
                 <Facts
                   items={[
                     ["Protected entry claims", `${fmt(floor, 6, 6)} USDC`],
-                    ["Matured backing credit", `${fmt(s.claimable, 6, 6)} USDC`],
+                    [
+                      "Matured backing credit",
+                      `${fmt(s.claimable, 6, 6)} USDC`,
+                    ],
                     [
                       "Provider ownership",
                       s.totalShares
@@ -309,25 +312,32 @@ export function Status() {
             ["factory", "Factory"],
             ["eurcOracle", "EURC price adapter"],
             ["cirbtcOracle", "cirBTC price adapter"],
+            ...(config.pyth?.contract && config.oracle === "pyth"
+              ? [["pythContract", "Pyth contract"]]
+              : []),
             ["scenarioOracle", "Scenario oracle"],
             ["deployer", "Test deployer"],
-          ].map(([key, label]) => (
-            <div key={key}>
-              <p className="source-note">{label}</p>
-              {config[key] ? (
-                <a
-                  className="address"
-                  href={explorer("address", config[key])}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {config[key]} ↗
-                </a>
-              ) : (
-                <p className="muted-text">Not deployed</p>
-              )}
-            </div>
-          ))}
+          ].map(([key, label]) => {
+            const address =
+              key === "pythContract" ? config.pyth?.contract : config[key];
+            return (
+              <div key={key}>
+                <p className="source-note">{label}</p>
+                {address ? (
+                  <a
+                    className="address"
+                    href={explorer("address", address)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {address} ↗
+                  </a>
+                ) : (
+                  <p className="muted-text">Not deployed</p>
+                )}
+              </div>
+            );
+          })}
         </article>
       </div>
       <div className="table-list">
@@ -354,14 +364,24 @@ export function Status() {
                     "Price",
                     s?.price
                       ? `${fmt(s.price, 6, 6)} USDC per ${assets.find((a) => a.key === m.asset)!.symbol}`
-                      : "Unavailable",
+                      : s?.lastPrice
+                        ? `${fmt(s.lastPrice, 6, 6)} USDC per ${assets.find((a) => a.key === m.asset)!.symbol} (last pushed; stale)`
+                        : "Unavailable",
                   ],
+                  ...(s?.publishTime != null
+                    ? ([
+                        [
+                          "Pyth publish time",
+                          `${new Date(Number(s.publishTime) * 1000).toISOString().replace(".000Z", " UTC").replace("T", " ")}${s.lastPrice ? ` · ${fmt(s.lastPrice, 6, 6)} USDC` : ""}`,
+                        ],
+                      ] as [string, string][])
+                    : []),
                   [
                     "Freshness",
                     m.synthetic
                       ? "Synthetic scenario; never a reference"
                       : s?.oracleAge != null && s?.maxAge != null
-                        ? `${formatAge(s.oracleAge)} old, limit ${formatAge(s.maxAge)} · ${isFresh(s.oracleAge, s.maxAge) ? "fresh" : "stale: new protection and asset exits paused"}`
+                        ? `${formatAge(s.oracleAge)} old, limit ${formatAge(s.maxAge)} · ${isFresh(s.oracleAge, s.maxAge) ? "fresh" : s.publishTime != null ? "stale on chain until the next action pushes a Pyth update" : "stale: new protection and asset exits paused"}`
                         : "Unavailable",
                   ],
                   ["Source", m.source],
@@ -412,8 +432,8 @@ export function Assets() {
         ].map((a) => (
           <article key={a.key}>
             <div className="eyebrow">
-              {a.key === "usdc" ? "BACKING" : "PROTECTED ASSET"} /{" "}
-              {a.decimals} DECIMALS
+              {a.key === "usdc" ? "BACKING" : "PROTECTED ASSET"} / {a.decimals}{" "}
+              DECIMALS
             </div>
             <h2>
               {a.name} · {a.symbol}

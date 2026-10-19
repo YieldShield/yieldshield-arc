@@ -106,6 +106,12 @@ test("agent manifest, llms.txt and ABIs are served and match the deployment", as
   ]);
   const llms = await (await request.get("/llms.txt")).text();
   expect(llms).toContain("Agents never sign");
+  expect(llms).toContain("Pyth price updates (push first)");
+  // Without a configured API key the same-origin price proxy answers 503, never a key or upstream error page.
+  const proxy = await request.get(
+    `/api/pyth-update?ids=${Object.values(manifest.pyth.feeds).join(",")}`,
+  );
+  expect([200, 503]).toContain(proxy.status());
   const abi = await (await request.get("/abi/ShieldPool.json")).json();
   expect(abi.some((item: any) => item.name === "protect")).toBe(true);
   await page.goto("/agents");

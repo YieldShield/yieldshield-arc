@@ -1,11 +1,11 @@
 {
   "network": "Disposable local Anvil only (chain 31337); no Arc testnet transaction",
   "chainId": 31337,
-  "recordedAt": "2026-10-19T07:47:06.750Z",
-  "browserDriver": "Playwright with an injected test provider that forwards to unlocked local Anvil accounts; no wallet extension approval screens",
-  "browserTransactionCount": 6,
+  "recordedAt": "2026-10-19T13:25:23.293Z",
+  "browserDriver": "Playwright with an injected test provider that forwards to unlocked local Anvil accounts; no wallet extension approval screens. Prices: local MockPyth, pushed by the app before each price-reading action",
+  "browserTransactionCount": 9,
   "allBrowserReceiptsSuccessful": true,
-  "parentCommit": "26c5b1b27a6e19947a96aa778ac6fb3c5730a73c",
+  "parentCommit": "2fbd5580c54376a88860a603cf6013b7b3926062",
   "finalContractAssertions": {
     "protectionOwner": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
     "remainingProtectedEurcUnits": "5000000",
@@ -16,17 +16,19 @@
     "allPassed": true
   },
   "sourceHashes": {
-    "src/Workflows.tsx": "b49ebe5f2378123f042cd6a899cec152d892b5447c4e7a51ad0bfa081d21098f",
-    "src/state.tsx": "500d3c0a7d6553e02907b53dd9c7334d5125d7ead3540eece1750285c74290b1",
-    "src/chain.ts": "47028a9bb91951f2e897126142da3f9ffc19328f6a7a545e80f44b6558d36484",
-    "src/ui.tsx": "5c5bf90a5f11ee007334d31fb51615801c81ee18fcf6f8128f7bfc2d1030e89c",
+    "src/Workflows.tsx": "0ce81606c2ef0aee31f3dfda2fb24283add1c051d37f6023a79c0a5b00f43fb6",
+    "src/state.tsx": "8b1af7666f8ecfb14a1f200428a540efb3d535ccd377dd7a41a8ce34e27b8f8d",
+    "src/chain.ts": "8c237a887c63896c7fcf69f629d7619c73be60019bf1652f1e5cd291377436b3",
+    "src/ui.tsx": "4ebabc683e0ef8ce90f2c4fd6743d4acc3f30cded965f4ae081873b0c67a099e",
     "contracts/src/ShieldPool.sol": "cf9b38a1b18c8b4b62be39796db17e4ac5e9cd9da51e082223d4ba4c02695531",
     "contracts/src/ShieldOracles.sol": "cf2e395a8b8d347f5fd732f901b6031f59c74aec29ba690b920ec49ce7a00815",
-    "tests/browser/local-lifecycle.spec.ts": "b24652d02c29e74c6875f5d41726885366ffc28eb2be18d33891a823be1564a8"
+    "contracts/src/ShieldPyth.sol": "46aeaf37e09298340ee3d96f63d1dfa36c390a8e19f8b53e552f307ced75c275",
+    "src/pyth.ts": "87689d792a20b89a37672d19c613554fefd20a02f4cda006d37e71dbc9fc2635",
+    "tests/browser/local-lifecycle.spec.ts": "7e167bddc06a770bfdcc77a23ac84dda3132b3a139fa138be9b9f7340a96df43"
   },
   "transactions": [
     {
-      "hash": "0xa6259df826f6f52b08ecd794888c53eb921dd60dd77a08b6c875abc2b23eca33",
+      "hash": "0xb951f3b79aa51510088325870d80544998ddfe5e91b3a62c000b390e9f0fdffc",
       "from": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
       "to": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
       "operation": "approve",
@@ -35,16 +37,16 @@
       "blockNumber": "34"
     },
     {
-      "hash": "0xeaf24ce8da160f57c3eb6d4c23f13718afa913d58951bc204af483c673fd4de3",
+      "hash": "0x4f6c1457476716df90c61a80c4a2bf9ecbaa9d6ef05facb39487e0ee726ca92d",
       "from": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
-      "to": "0xf3ee3c4ec25e8414838567818a30c90c7d62f834",
+      "to": "0xf1823bc4243b40423b8c8c3f6174e687a4c690b8",
       "operation": "depositJuniorBounded",
       "value": "0",
       "status": "success",
       "blockNumber": "35"
     },
     {
-      "hash": "0x849d31549a867c13630dd16f93ad4370f0ff17fe9c3526a6a566708a0827021e",
+      "hash": "0x2915019f39022a8b5494917f4e1ada4ae957c9fa60612bf48bc78245832c4180",
       "from": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
       "to": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
       "operation": "approve",
@@ -53,31 +55,58 @@
       "blockNumber": "36"
     },
     {
-      "hash": "0xcce3f7837c47054b8d24f20c0dfc871d5ca0372dfb17848c872432590a609a51",
+      "hash": "0xc6d1d98fbc9ee3fa4e5a80f8f0a32f5f62f144e4b1f87bbcedacf62456b25d93",
       "from": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
-      "to": "0xf3ee3c4ec25e8414838567818a30c90c7d62f834",
-      "operation": "protect",
-      "value": "0",
+      "to": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+      "operation": "updatePriceFeeds",
+      "value": "3",
       "status": "success",
       "blockNumber": "37"
     },
     {
-      "hash": "0xebb209c3f9d3296ae0d4f9200cdcc34044c3063ef0a79fb87bb5712a7355d0b7",
+      "hash": "0x035619a7576585eeade79c869da3fde490a39bb2c801a7718bf32528ee5f6566",
       "from": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
-      "to": "0xf3ee3c4ec25e8414838567818a30c90c7d62f834",
+      "to": "0xf1823bc4243b40423b8c8c3f6174e687a4c690b8",
+      "operation": "protect",
+      "value": "0",
+      "status": "success",
+      "blockNumber": "38"
+    },
+    {
+      "hash": "0x1a0cb2b50ab1cea43f123b1707bbc71e4f5660eb53bd6f2f9ac4424dc1f08d5b",
+      "from": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
+      "to": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+      "operation": "updatePriceFeeds",
+      "value": "3",
+      "status": "success",
+      "blockNumber": "41"
+    },
+    {
+      "hash": "0x7c275580f8ea32b54251eaead2403c9dd1d76ce703b1111b5b0c983c27f267d3",
+      "from": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
+      "to": "0xf1823bc4243b40423b8c8c3f6174e687a4c690b8",
       "operation": "partialExitAsset",
       "value": "0",
       "status": "success",
-      "blockNumber": "40"
+      "blockNumber": "42"
     },
     {
-      "hash": "0xd9f5e21c4b2464860e2087c3ae7ea45c82bebe68f0fc0137e361cb8c26e57226",
+      "hash": "0xfebe635fd697d61e12740e755415991d750106247e8170bc4891cfd373b4d018",
       "from": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
-      "to": "0xf3ee3c4ec25e8414838567818a30c90c7d62f834",
+      "to": "0xf1823bc4243b40423b8c8c3f6174e687a4c690b8",
       "operation": "claimRewards",
       "value": "0",
       "status": "success",
-      "blockNumber": "41"
+      "blockNumber": "43"
+    },
+    {
+      "hash": "0x1e33f2002889300c4a994e23eb2cfc9ab9c036f1936c388b7a4be5f8103435e8",
+      "from": "0x90f79bf6eb2c4f870365e785982e1f101e93b906",
+      "to": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+      "operation": "approve",
+      "value": "0",
+      "status": "success",
+      "blockNumber": "47"
     }
   ]
 }

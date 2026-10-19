@@ -7,8 +7,10 @@ import {
   MANIFEST_SCHEMA,
 } from "../src/agent-manifest.mjs";
 import { formatAge, isFresh } from "../src/freshness.mjs";
+import { parseHermes, pythProblem, quotient } from "../src/pyth-math.mjs";
 const deployment = JSON.parse(readFileSync("config/deployment.json", "utf8"));
-const forbidden = /risk-free|100% protection|guaranteed (return|yield)|insured/i;
+const forbidden =
+  /risk-free|100% protection|guaranteed (return|yield)|insured/i;
 test("the agent manifest describes the committed deployment", () => {
   const m = buildAgentManifest(deployment);
   assert.equal(m.schema, MANIFEST_SCHEMA);
@@ -37,12 +39,37 @@ test("the agent manifest describes the committed deployment", () => {
       ["scenario", deployment.scenarioPool, true],
     ],
   );
-  assert.equal(m.oracles.eurc.maxAgeSeconds, deployment.maxPriceAge);
+  assert.equal(m.oracles.eurc.maxAgeSeconds, deployment.pyth.maxAge);
   assert.equal(m.oracles.scenario.synthetic, true);
 });
-test("unsigned-transaction recipes never send native value and cover both exits", () => {
+test("unsigned-transaction recipes push the Pyth price first and send value only to Pyth", () => {
   const m = buildAgentManifest(deployment);
-  assert.match(m.unsignedTransactions.conventions.value, /always 0/);
+  assert.equal(deployment.oracle, "pyth");
+  assert.match(
+    m.unsignedTransactions.conventions.value,
+    /0 for every YieldShield contract call/,
+  );
+  assert.match(
+    m.unsignedTransactions.conventions.value,
+    /only pyth.updatePriceFeeds carries value/,
+  );
+  assert.match(m.unsignedTransactions.conventions.gas, /30%/);
+  const protect = m.unsignedTransactions.recipes.find(
+    (r) => r.intent === "protect",
+  );
+  assert.match(protect.steps[1], /^pyth\.updatePriceFeeds/);
+  assert.match(protect.steps[2], /^market\.protect/);
+  const backing = m.unsignedTransactions.recipes.find((r) =>
+    r.intent.startsWith("backing exit"),
+  );
+  assert.ok(
+    !backing.steps.some((s) => s.includes("updatePriceFeeds")),
+    "backing exits need no price",
+  );
+  assert.equal(m.pyth.contract, "0x2880aB155794e7179c9eE2e38200202908C17B43");
+  assert.equal(m.oracles.eurc.kind, "pyth");
+  assert.equal(m.oracles.eurc.maxAgeSeconds, 120);
+  assert.match(m.oracles.cirbtc.price, /assumes cirBTC trades 1:1 with BTC/);
   const intents = m.unsignedTransactions.recipes.map((r) => r.intent);
   for (const needed of ["protect", "provide USDC", "settle after maturity"])
     assert.ok(
@@ -52,7 +79,7 @@ test("unsigned-transaction recipes never send native value and cover both exits"
   assert.ok(intents.some((i) => i.includes("asset exit")));
   assert.ok(intents.some((i) => i.includes("backing exit")));
   assert.ok(m.safetyChecks.some((c) => c.includes("5042002")));
-  assert.ok(m.safetyChecks.some((c) => c.includes("age()")));
+  assert.ok(m.safetyChecks.some((c) => c.includes("updatePriceFeeds")));
 });
 test("llms.txt lists markets, freshness rules and the no-signing rule", () => {
   const text = buildLlmsTxt(buildAgentManifest(deployment));
@@ -60,6 +87,8 @@ test("llms.txt lists markets, freshness rules and the no-signing rule", () => {
   assert.match(text, /Agents never sign/);
   assert.match(text, /SYNTHETIC scenario price/);
   assert.match(text, /INVALID_OR_STALE_PRICE/);
+  assert.match(text, /Pyth price updates \(push first\)/);
+  assert.match(text, /pyth\.updatePriceFeeds/);
   assert.match(text, /chain ID 5042002/);
 });
 test("agent text avoids insurance-style claims", () => {
@@ -79,6 +108,58 @@ test("a verified deployment enables writes and carries its addresses", () => {
   assert.equal(m.status.writesEnabled, true);
   assert.equal(m.contracts.factory, verified.factory);
   assert.equal(m.markets[0].address, verified.eurcPool);
+});
+test("Pyth quotient, Hermes parsing and value checks mirror ShieldPythOracle", () => {
+  const eurc = {
+    price: 116524999n,
+    conf: 121170n,
+    expo: -8,
+    publishTime: 100n,
+  };
+  const usdc = { price: 99994808n, conf: 36282n, expo: -8, publishTime: 100n };
+  const btc = {
+    price: 8539753395754n,
+    conf: 2780604245n,
+    expo: -8,
+    publishTime: 100n,
+  };
+  assert.equal(quotient(eurc, usdc), 1165310n);
+  assert.equal(quotient(btc, usdc), 85401968027n);
+  const parsed = parseHermes({
+    binary: { data: ["abcd"] },
+    parsed: [
+      {
+        id: "76fa",
+        price: {
+          price: "116524999",
+          conf: "121170",
+          expo: -8,
+          publish_time: 100,
+        },
+      },
+    ],
+  });
+  assert.deepEqual(parsed.data, ["0xabcd"]);
+  assert.deepEqual(parsed.parsed[0], {
+    id: "0x76fa",
+    price: 116524999n,
+    conf: 121170n,
+    expo: -8,
+    publishTime: 100n,
+  });
+  assert.equal(pythProblem(eurc, 220n, 120, 100), null);
+  assert.equal(pythProblem(eurc, 221n, 120, 100), "stale");
+  assert.equal(
+    pythProblem({ ...eurc, conf: 0n }, 100n, 120, 100),
+    "confidence too wide",
+  );
+  assert.equal(
+    pythProblem({ ...eurc, conf: 1165250n }, 100n, 120, 100),
+    "confidence too wide",
+  );
+  assert.equal(pythProblem({ ...eurc, price: 0n }, 100n, 120, 100), "invalid");
+  assert.equal(pythProblem({ ...eurc, expo: 1 }, 100n, 120, 100), "invalid");
+  assert.equal(pythProblem(undefined, 100n, 120, 100), "missing");
 });
 test("price freshness mirrors the adapter's inclusive limit", () => {
   assert.equal(isFresh(10800n, 10800n), true);

@@ -30,8 +30,10 @@ import {
   featured,
   assets,
   DEFAULT_TERMS,
+  sourceNames,
   type Market,
 } from "./chain";
+import { storedPrice } from "./pyth";
 import { safeError } from "./math.mjs";
 import { createLatestRead } from "./lifecycle.mjs";
 export type Position = {
@@ -57,6 +59,9 @@ export type Snapshot = {
   oracleAge: bigint | null;
   /** The adapter's freshness limit in seconds; null for synthetic sources. */
   maxAge: bigint | null;
+  /** Pyth only: the last price pushed on chain (usable only while fresh) and its publish time. */
+  lastPrice: bigint | null;
+  publishTime: bigint | null;
   capacity: bigint;
   nav: bigint | null;
   maturity: bigint;
@@ -209,11 +214,11 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
           ),
       );
       // Community pools use one of the factory's approved oracles; name the source so a synthetic
-      // scenario pool cannot pass for a Chronicle-priced one.
+      // scenario pool cannot pass for a reference-priced one.
       const sources: [Address | null, string, boolean][] = [
-        [config.eurcOracle, "Chronicle EURC/USD ÷ USDC/USD", false],
-        [config.cirbtcOracle, "Chronicle CIRBTC/USDC", false],
-        [config.scenarioOracle, "Synthetic 1.10 → 1.20 → 1.00 cycle", true],
+        [config.eurcOracle, sourceNames.eurc, false],
+        [config.cirbtcOracle, sourceNames.cirbtc, false],
+        [config.scenarioOracle, sourceNames.scenario, true],
       ];
       const details = await Promise.all(
         community.map((address) =>
@@ -297,6 +302,9 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
                   read(oracle, oracleAbi, n).catch(() => null),
                 ),
               );
+            const stored = await storedPrice({ ...market, oracle }).catch(
+              () => null,
+            );
             const positions = (
               await Promise.all(
                 (openIds as bigint[]).map((id) =>
@@ -340,6 +348,8 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
               oracleError,
               oracleAge,
               maxAge,
+              lastPrice: stored?.price ?? null,
+              publishTime: stored?.publishTime ?? null,
               terms,
               ownShares: personal[0],
               ready: personal[1],

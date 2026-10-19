@@ -30,7 +30,20 @@ import {
   RouteLink,
   Empty,
 } from "./ui";
-import { minimumOutput, safeError, spendableUsdc } from "./math.mjs";
+import {
+  exitPreview,
+  minimumOutput,
+  safeError,
+  spendableUsdc,
+} from "./math.mjs";
+import {
+  fetchPriceUpdate,
+  marketFeeds,
+  priceFrom,
+  pythAbi,
+  type PriceUpdate,
+} from "./pyth";
+import { formatAge } from "./freshness.mjs";
 type Quote = {
   assertCurrent: () => void;
   amount: bigint;
@@ -41,7 +54,45 @@ type Quote = {
   deadline: bigint;
   account: Address;
   details?: string;
+  /** Pyth markets: a price update is pushed in its own transaction right before the action. */
+  priceUpdateFee?: bigint;
 };
+/** Fresh Pyth price for a market (or null if it uses no Pyth feed), with the update to push before acting. */
+async function pythQuote(market: Parameters<typeof marketFeeds>[0]) {
+  if (!marketFeeds(market)) return null;
+  const update = await fetchPriceUpdate();
+  return { update, price: priceFrom(update, market) };
+}
+/** Pushes a fresh Pyth price, as the first of two signatures, right before the reviewed action. */
+async function pushPrice(
+  transact: (...args: any[]) => Promise<any>,
+  assertReview: () => void,
+) {
+  const fresh: PriceUpdate = await fetchPriceUpdate();
+  await transact(
+    "Update Pyth price",
+    config.pyth.contract,
+    pythAbi,
+    "updatePriceFeeds",
+    [fresh.data],
+    fresh.fee,
+    assertReview,
+  );
+}
+/** Review-screen explanation of the two-step signing for Pyth markets. */
+export function TwoStepNote({ fee }: { fee?: bigint }) {
+  if (fee === undefined) return null;
+  return (
+    <p className="muted-text two-step-note">
+      Two signatures: first a Pyth price update (fee {String(fee)} wei of USDC,
+      about 10<sup>−18</sup> USDC per price, plus gas), then the action. Pyth is
+      a pull oracle, so the fresh price must be on chain before the market can
+      read it. If the second step is not mined within{" "}
+      {formatAge(BigInt(config.pyth?.maxAge ?? 120))} of the update, review
+      again.
+    </p>
+  );
+}
 async function valid(q: Quote) {
   if (q.deadline < (await chainTimestamp()))
     throw new Error("Review expired. Get a fresh quote.");
@@ -120,21 +171,36 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
       if ((await chainTimestamp()) >= maturity)
         throw new Error("This epoch has ended. Create a fresh market.");
       let out: bigint;
+      let priceUpdateFee: bigint | undefined;
+      const unit = 10n ** BigInt(asset.decimals);
       if (provider) {
         if (reserve > 0n)
           throw new Error(
             "Provider entry is frozen until all protected positions settle. Create a fresh market to provide now.",
           );
-        const [nav, shares] = await Promise.all(
-          ["juniorValue", "totalShares"].map((name) =>
+        const [backing, inventory, shares] = await Promise.all(
+          ["totalBacking", "juniorInventory", "totalShares"].map((name) =>
             read(market.address!, poolAbi, name),
           ),
         );
+        // Surrendered assets are valued at the reference price, which Pyth markets must push first.
+        const pyth = inventory > 0n ? await pythQuote(market) : null;
+        const nav = pyth
+          ? backing + (inventory * pyth.price) / unit
+          : await read(market.address!, poolAbi, "juniorValue");
+        priceUpdateFee = pyth?.update.fee;
         out = shares === 0n ? n * 10n ** 12n : (n * shares) / nav;
       } else {
-        const oracle = await read(market.address, poolAbi, "oracle");
-        const price = await read(oracle, oracleAbi, "price");
-        out = (n * price) / 10n ** BigInt(asset.decimals);
+        const pyth = await pythQuote(market);
+        const price = pyth
+          ? pyth.price
+          : await read(
+              await read(market.address, poolAbi, "oracle"),
+              oracleAbi,
+              "price",
+            );
+        priceUpdateFee = pyth?.update.fee;
+        out = (n * price) / unit;
         if (out < 10_000n)
           throw new Error(
             "The entry claim must be at least 0.01 USDC. Increase the amount.",
@@ -163,6 +229,7 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
         minimum: minimumOutput(out),
         deadline: reviewedDeadline,
         account,
+        priceUpdateFee,
       });
     } catch (e) {
       setError(safeError(e));
@@ -189,6 +256,8 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
       assertCurrent();
       quote.assertCurrent();
       await valid(quote);
+      if (quote.priceUpdateFee !== undefined)
+        await pushPrice(transact, quote.assertCurrent);
       const receipt = await transact(
         provider ? "Provide capital" : `Protect ${asset.symbol}`,
         market.address,
@@ -307,8 +376,17 @@ export function RoleFlow({ role }: { role: "protect" | "provide" }) {
                           Number(quote.deadline) * 1000,
                         ).toLocaleTimeString("en-US"),
                       ],
+                      ...(quote.priceUpdateFee !== undefined
+                        ? ([
+                            [
+                              "Signatures",
+                              "2 · Pyth price update, then the action",
+                            ],
+                          ] as [string, string][])
+                        : []),
                     ]}
                   />
+                  <TwoStepNote fee={quote.priceUpdateFee} />
                   <ActionButton
                     disabled={working}
                     onClick={() => void confirm()}
@@ -451,7 +529,11 @@ export function Positions() {
           <article key={`${m.key}:${p.id}`}>
             <div className="eyebrow">HOLDER / {m.name}</div>
             <h2>
-              {fmt(p.amount, assets.find((a) => a.key === m.asset)!.decimals, 8)}{" "}
+              {fmt(
+                p.amount,
+                assets.find((a) => a.key === m.asset)!.decimals,
+                8,
+              )}{" "}
               {assets.find((a) => a.key === m.asset)!.symbol}
             </h2>
             <p>Remaining entry claim: {fmt(p.floor)} USDC</p>
@@ -542,12 +624,27 @@ export function PositionDetail() {
       const n = units(amount, asset.decimals);
       if (n > p.amount) throw new Error("Amount exceeds position.");
       let output: bigint;
+      let priceUpdateFee: bigint | undefined;
+      const floorOut = n === p.amount ? p.floor : (p.floor * n) / p.amount;
       if (mode === "asset") {
-        [output] = await read(m.address, poolAbi, "previewPartialExit", [
-          p.id,
-          n,
-        ]);
-      } else output = n === p.amount ? p.floor : (p.floor * n) / p.amount;
+        const pyth = await pythQuote(m);
+        if (pyth) {
+          // The on-chain preview needs a fresh price; compute it from the fresh Pyth price instead.
+          output = exitPreview(
+            n,
+            floorOut,
+            pyth.price,
+            10n ** BigInt(asset.decimals),
+            BigInt(s!.terms.juniorFeeBps),
+            BigInt(s!.terms.creatorFeeBps),
+          ).assetOut;
+          priceUpdateFee = pyth.update.fee;
+        } else
+          [output] = await read(m.address, poolAbi, "previewPartialExit", [
+            p.id,
+            n,
+          ]);
+      } else output = floorOut;
       if (!output) throw new Error("Exit amount is too small.");
       const reviewedDeadline = await chainDeadline();
       assertCurrent();
@@ -558,6 +655,7 @@ export function PositionDetail() {
         minimum: minimumOutput(output),
         deadline: reviewedDeadline,
         account,
+        priceUpdateFee,
       });
     } catch (e) {
       setError(safeError(e));
@@ -572,6 +670,8 @@ export function PositionDetail() {
       consumeReview(q.assertCurrent);
       setQ(null);
       await valid(q);
+      if (q.priceUpdateFee !== undefined)
+        await pushPrice(transact, q.assertCurrent);
       await transact(
         mode === "transfer" ? "Transfer position" : `Partial ${mode} exit`,
         m.address,
@@ -709,6 +809,7 @@ export function PositionDetail() {
                       ["Price tolerance", "0.5% maximum reduction"],
                     ]}
                   />
+                  <TwoStepNote fee={q.priceUpdateFee} />
                   <ActionButton onClick={() => void confirm()}>
                     Confirm{" "}
                     {mode === "transfer" ? "ownership transfer" : "exit"}

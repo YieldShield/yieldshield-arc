@@ -33,8 +33,8 @@ export function Guide() {
           <p>
             Deposit USDC into a market. Positive asset exits create
             independently claimable fees. Backing exits consume your USDC and
-            leave you the surrendered asset. Redemption returns a basket of
-            USDC and asset inventory.
+            leave you the surrendered asset. Redemption returns a basket of USDC
+            and asset inventory.
           </p>
           <RouteLink to="/provide">Provide capital ↗</RouteLink>
         </article>
@@ -110,13 +110,15 @@ export function Guide() {
           preserves the remainder. Gain fees apply only to the withdrawn slice.
           Remaining protection keeps its original opening time and maturity.
         </p>
-        <h2>What happens when the price is stale?</h2>
+        <h2>Why two signatures?</h2>
         <p>
-          Reference markets read Chronicle feeds on Arc testnet and reject any
-          value older than three hours. While a feed is stale, new protection
-          and asset exits revert; backing exits and maturity settlement need no
-          price and keep working. No reference market ever falls back to the
-          scenario price.
+          Reference markets use Pyth, a pull oracle: a price is only on chain
+          after someone pushes it. Before protecting, taking an asset exit or
+          creating a market, the app sends a Pyth price update (a fee of a few
+          wei of USDC plus gas), then the action. The markets reject prices
+          older than two minutes or with too wide a confidence interval. Backing
+          exits and maturity settlement need no price and no update. No
+          reference market ever falls back to the scenario price.
         </p>
       </div>
     </>
@@ -144,9 +146,10 @@ export function Legal() {
           fixed USDC claim and depends on contract correctness and on the
           backing actually reserved. Oracle prices may be unavailable or stale;
           an asset exit can fail while a backing claim remains possible. USDC
-          transfers to or from blocklisted addresses revert on Arc. Smart-contract errors, wallet errors
-          and network interruptions are possible. At maturity, forced settlement
-          forfeits remaining asset upside.
+          transfers to or from blocklisted addresses revert on Arc.
+          Smart-contract errors, wallet errors and network interruptions are
+          possible. At maturity, forced settlement forfeits remaining asset
+          upside.
         </p>
         <h2>Browser data</h2>
         <p>

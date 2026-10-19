@@ -5,8 +5,14 @@ import { createPublicClient, http, encodeFunctionData, parseAbi } from "viem";
 const enabled = process.env.SHIELD_LOCAL_E2E === "1";
 const RPC = "http://127.0.0.1:8567";
 const WEB = "http://127.0.0.1:5204";
-const chronicle = parseAbi(["function set(uint256 value, uint256 updatedAt)"]);
-async function setup(page: Page, accountIndex: number) {
+const mockPyth = parseAbi([
+  "function setPrice(bytes32 id, int64 price, uint64 conf, int32 expo, uint256 publishTime)",
+]);
+async function setup(
+  page: Page,
+  accountIndex: number,
+  rejectPythUpdates = false,
+) {
   const m = JSON.parse(readFileSync(".local/deployment.json", "utf8"));
   const rpc = createPublicClient({ transport: http(RPC) });
   expect(await rpc.getChainId()).toBe(31337);
@@ -19,21 +25,21 @@ async function setup(page: Page, accountIndex: number) {
       method: "eth_sendTransaction",
       params: [{ from: accounts[0], to, data }],
     } as any);
-  /** Moves a local Chronicle stand-in, stamped with the latest chain time so it stays fresh. */
-  const setFeed = async (feed: string, value: bigint) => {
+  /** Sets a local MockPyth price (expo -8), stamped with the latest chain time. The app pushes its own update before acting. */
+  const setFeed = async (feed: string, price: bigint) => {
     const { timestamp } = await rpc.getBlock();
     await send(
-      feed,
+      m.pyth.contract,
       encodeFunctionData({
-        abi: chronicle,
-        functionName: "set",
-        args: [value, timestamp],
+        abi: mockPyth,
+        functionName: "setPrice",
+        args: [feed as `0x${string}`, price, price / 10000n, -8, timestamp],
       }),
     );
   };
-  await setFeed(m.chronicle.eurcUsd, 1_100000000000000000n);
-  await setFeed(m.chronicle.usdcUsd, 1_000000000000000000n);
-  await setFeed(m.chronicle.cirbtcUsdc, 81827_183708000000000000n);
+  await setFeed(m.pyth.feeds.eurcUsd, 110000000n);
+  await setFeed(m.pyth.feeds.usdcUsd, 100000000n);
+  await setFeed(m.pyth.feeds.btcUsd, 8182718370800n);
   await page.exposeFunction("__walletRpc", async (request: any) => {
     if (
       request.method === "eth_requestAccounts" ||
@@ -42,6 +48,14 @@ async function setup(page: Page, accountIndex: number) {
       return [account];
     if (request.method === "wallet_switchEthereumChain") return null;
     if (request.method === "wallet_addEthereumChain") return null;
+    if (
+      rejectPythUpdates &&
+      request.method === "eth_sendTransaction" &&
+      request.params?.[0]?.to?.toLowerCase() === m.pyth.contract.toLowerCase()
+    )
+      throw Object.assign(new Error("User rejected the request."), {
+        code: 4001,
+      });
     return rpc.request(request);
   });
   await page.addInitScript(() => {
@@ -53,7 +67,7 @@ async function setup(page: Page, accountIndex: number) {
   });
   return { m, rpc, setFeed };
 }
-test("local signed browser journey: provide USDC → protect EURC → gain exit → claim fees", async ({
+test("local signed browser journey: provide USDC → Pyth update + protect EURC → Pyth update + gain exit → claim fees", async ({
   page,
 }) => {
   test.skip(!enabled, "Explicit local-only chain setup required.");
@@ -78,6 +92,12 @@ test("local signed browser journey: provide USDC → protect EURC → gain exit 
   await page.getByLabel("Amount", { exact: true }).fill("10");
   await page.getByRole("button", { name: "Review protection" }).click();
   await expect(page.getByText("11 USDC").first()).toBeVisible();
+  await expect(
+    page.getByText("2 · Pyth price update, then the action"),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Two signatures: first a Pyth price update/),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Confirm protection" }).click();
   await expect(
     page.getByRole("heading", { name: "Protection opened." }),
@@ -85,9 +105,12 @@ test("local signed browser journey: provide USDC → protect EURC → gain exit 
   await page.getByRole("link", { name: "View position" }).click();
   await rpc.request({ method: "evm_increaseTime", params: [61] } as any);
   await rpc.request({ method: "evm_mine", params: [] } as any);
-  await setFeed(m.chronicle.eurcUsd, 2_200000000000000000n);
+  await setFeed(m.pyth.feeds.eurcUsd, 220000000n);
   await page.getByLabel("Amount to exit", { exact: true }).fill("5");
   await page.getByRole("button", { name: "Review exit", exact: true }).click();
+  await expect(
+    page.getByText(/Two signatures: first a Pyth price update/),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Confirm exit", exact: true }).click();
   await expect(page.getByRole("status")).toContainText(
     "Partial asset exit confirmed.",
@@ -111,6 +134,9 @@ test("local signed browser journey: provide USDC → protect EURC → gain exit 
   await expect(
     page.getByRole("heading", { name: "Claim provider rewards", exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Update Pyth price", exact: true }),
+  ).toHaveCount(2);
   await page
     .getByRole("navigation", { name: "Portfolio navigation" })
     .getByRole("link", { name: "Balances", exact: true })
@@ -120,40 +146,41 @@ test("local signed browser journey: provide USDC → protect EURC → gain exit 
     page.getByRole("heading", { name: "Connect your wallet" }),
   ).toBeVisible();
 });
-test("a stale reference price blocks protection and explains why", async ({
+test("rejecting the Pyth price update sends no protection", async ({
   page,
 }) => {
   test.skip(!enabled, "Explicit local-only chain setup required.");
-  const { m, rpc } = await setup(page, 3);
-  // Age the cirBTC feed past the 3-hour limit without moving the clock backwards.
-  const { timestamp } = await rpc.getBlock();
-  await rpc.request({
-    method: "eth_sendTransaction",
-    params: [
-      {
-        from: ((await rpc.request({ method: "eth_accounts" } as any)) as string[])[0],
-        to: m.chronicle.cirbtcUsdc,
-        data: encodeFunctionData({
-          abi: chronicle,
-          functionName: "set",
-          args: [81827_183708000000000000n, timestamp - 10801n],
-        }),
-      },
-    ],
-  } as any);
+  const { m, rpc } = await setup(page, 3, true);
+  const pool = parseAbi(["function nextPositionId() view returns (uint256)"]);
+  const before = await rpc.readContract({
+    address: m.cirbtcPool,
+    abi: pool,
+    functionName: "nextPositionId",
+  });
   await page.goto(`${WEB}/protect?pool=cirbtc`);
   await page
     .getByRole("button", { name: "Connect wallet", exact: true })
     .first()
     .click();
-  await page.getByLabel("Amount", { exact: true }).fill("0.0001");
+  // 0.00003 cirBTC is about 2.45 USDC, inside the 5 USDC seed's 3.33 USDC capacity.
+  await page.getByLabel("Amount", { exact: true }).fill("0.00003");
   await page.getByRole("button", { name: "Review protection" }).click();
-  await expect(page.getByRole("alert")).toContainText(
-    "reference price is stale or unavailable",
-  );
   await expect(
-    page.getByRole("button", { name: "Confirm protection" }),
+    page.getByText("2 · Pyth price update, then the action"),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Confirm protection" }).click();
+  // The injected test provider cannot carry the 4001 code across the page boundary, so the wording is generic.
+  await expect(page.getByRole("alert")).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.getByRole("heading", { name: "Protection opened." }),
   ).toHaveCount(0);
+  expect(
+    await rpc.readContract({
+      address: m.cirbtcPool,
+      abi: pool,
+      functionName: "nextPositionId",
+    }),
+  ).toBe(before);
 });
 test("an in-flight quote cannot revive a previous market review", async ({
   page,
@@ -191,5 +218,7 @@ test("an in-flight quote cannot revive a previous market review", async ({
   await arrived;
   await page.getByLabel("Choose a market").selectOption("scenario");
   release();
-  await expect(page.getByRole("button", { name: "Confirm protection" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Confirm protection" }),
+  ).toHaveCount(0);
 });

@@ -80,6 +80,9 @@ const tokenErrors = parseAbi([
   "error ERC20InvalidReceiver(address receiver)",
   "error SafeERC20FailedOperation(address token)",
   "error NotTolled(address caller)",
+  "error StalePrice()",
+  "error PriceFeedNotFound()",
+  "error InsufficientFee()",
 ]);
 const withErrors = (abi: unknown) => {
   const own = abi as Abi;
@@ -170,6 +173,17 @@ export const assets: Asset[] = [
   },
 ];
 export const assetOf = (key: AssetKey) => assets.find((a) => a.key === key)!;
+const pythOracle = config.oracle === "pyth";
+/** Human-readable reference price sources, by the manifest's oracle provider. */
+export const sourceNames = {
+  eurc: pythOracle
+    ? "Pyth EURC/USD ÷ USDC/USD"
+    : "Chronicle EURC/USD ÷ USDC/USD",
+  cirbtc: pythOracle
+    ? "Pyth BTC/USD ÷ USDC/USD (cirBTC assumed 1:1 with BTC)"
+    : "Chronicle CIRBTC/USDC",
+  scenario: "Synthetic 1.10 → 1.20 → 1.00 cycle",
+};
 export type Market = {
   key: string;
   name: string;
@@ -187,7 +201,7 @@ export const featured: Market[] = [
     asset: "eurc",
     address: config.eurcPool,
     oracle: config.eurcOracle,
-    source: "Chronicle EURC/USD ÷ USDC/USD",
+    source: sourceNames.eurc,
     synthetic: false,
   },
   {
@@ -196,7 +210,7 @@ export const featured: Market[] = [
     asset: "cirbtc",
     address: config.cirbtcPool,
     oracle: config.cirbtcOracle,
-    source: "Chronicle CIRBTC/USDC",
+    source: sourceNames.cirbtc,
     synthetic: false,
   },
   {
@@ -205,7 +219,7 @@ export const featured: Market[] = [
     asset: "eurc",
     address: config.scenarioPool,
     oracle: config.scenarioOracle,
-    source: "Synthetic 1.10 → 1.20 → 1.00 cycle",
+    source: sourceNames.scenario,
     synthetic: true,
   },
 ];

@@ -1,19 +1,27 @@
 /** Exact integer accounting, matching the immutable pool. Prices are USDC base units per whole asset unit. */
 export const WAD = 10n ** 18n;
 export const unitOf = (decimals) => 10n ** BigInt(decimals);
-/** Mirrors ShieldPool.previewPartialExit with the default 10% / 1% / 1% gain fees. */
-export function exitPreview(amount, floor, price, unit = WAD) {
+/**
+ * Mirrors ShieldPool.previewPartialExit: fees on the realized gain of the slice, each rounded down separately
+ * (provider `juniorBps`, creator `creatorBps`, protocol 1%). Defaults are the featured 10% / 1% / 1%.
+ */
+export function exitPreview(
+  amount,
+  floor,
+  price,
+  unit = WAD,
+  juniorBps = 1000n,
+  creatorBps = 100n,
+) {
   if (amount < 0n || floor < 0n || price <= 0n || unit <= 0n)
     throw new Error("Invalid quote");
   const value = (amount * price) / unit;
   const gain = value > floor ? ((value - floor) * unit) / price : 0n;
-  const junior = (gain * 1000n) / 10000n;
-  const recipient = (gain * 100n) / 10000n;
-  return {
-    assetOut: amount - junior - 2n * recipient,
-    fee: junior + 2n * recipient,
-    backingOut: floor,
-  };
+  const fee =
+    (gain * BigInt(juniorBps)) / 10000n +
+    (gain * BigInt(creatorBps)) / 10000n +
+    (gain * 100n) / 10000n;
+  return { assetOut: amount - fee, fee, backingOut: floor };
 }
 /** Entry claim in USDC base units for `amount` asset units at `price` (mirrors ShieldPool._protect). */
 export function entryClaim(amount, price, unit = WAD) {
@@ -56,12 +64,19 @@ const knownErrors = {
   EpochClosed: "This market's epoch has ended.",
   PositionLimit: "This market already has 100 open positions.",
   NotTolled: "The price adapter is not whitelisted on its Chronicle feed.",
+  StalePrice:
+    "The on-chain Pyth price is older than the limit. Push a fresh price update, then try again.",
+  PriceFeedNotFound: "Pyth has no price for this feed yet.",
+  InsufficientFee: "The Pyth update fee was too low. Review again.",
 };
 /** Plain-language explanations for `require` reason strings. */
 const knownReasons = {
   INVALID_OR_STALE_PRICE:
     "The reference price is stale or unavailable, so new protection and asset exits are paused. Backing exits still work.",
   ZERO_PRICE: "The reference price is unavailable.",
+  INVALID_PRICE: "The reference price is invalid.",
+  CONFIDENCE:
+    "The reference price's confidence interval is too wide to use right now. Try again shortly.",
   BLOCKLISTED: "A token transfer to or from a blocklisted address was refused.",
   DEADLINE:
     "The review expired before the transaction was mined. Review again.",

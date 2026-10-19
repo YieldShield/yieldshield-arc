@@ -14,10 +14,13 @@ import {
   chainDeadline,
   chainTimestamp,
   GAS_RESERVE,
+  sourceNames,
 } from "./chain";
 import { useShield } from "./state";
 import { PageTitle, ActionButton, Facts, RouteLink, Risk } from "./ui";
 import { safeError } from "./math.mjs";
+import { fetchPriceUpdate, pythAbi, usesPyth } from "./pyth";
+import { TwoStepNote } from "./Workflows";
 export function CreatePool() {
   const { account, identity, approve, transact } = useShield();
   const [asset, setAsset] = useState<"eurc" | "cirbtc">("eurc"),
@@ -28,6 +31,7 @@ export function CreatePool() {
       deadline: bigint;
       seed: bigint;
       identity: number;
+      priceUpdateFee?: bigint;
     } | null>(null),
     [error, setError] = useState(""),
     [success, setSuccess] = useState("");
@@ -88,7 +92,11 @@ export function CreatePool() {
         throw new Error(
           "This asset and oracle are not approved by the factory.",
         );
-      await read(oracle, oracleAbi, "price");
+      // Creation reads the reference price: Pyth markets check a fresh update now and push one before creating.
+      const pyth = usesPyth && oracle !== config.scenarioOracle;
+      const priceUpdateFee = pyth
+        ? (await fetchPriceUpdate()).fee
+        : (await read(oracle, oracleAbi, "price"), undefined);
       const held = await read(collateral, tokenAbi, "balanceOf", [account]);
       if (held < seed + GAS_RESERVE)
         throw new Error(
@@ -117,6 +125,7 @@ export function CreatePool() {
         deadline: reviewedDeadline,
         seed,
         identity,
+        priceUpdateFee,
       });
     } catch (e) {
       setError(safeError(e));
@@ -135,6 +144,19 @@ export function CreatePool() {
       consumeReview(review.assertCurrent);
       setReview(null);
       await approve(collateral, config.factory, review.seed);
+      if (review.priceUpdateFee !== undefined) {
+        assertCurrent();
+        const fresh = await fetchPriceUpdate();
+        await transact(
+          "Update Pyth price",
+          config.pyth.contract,
+          pythAbi,
+          "updatePriceFeeds",
+          [fresh.data],
+          fresh.fee,
+          review.assertCurrent,
+        );
+      }
       assertCurrent();
       review.assertCurrent();
       const receipt = await transact(
@@ -221,9 +243,7 @@ export function CreatePool() {
                     value={source}
                     onChange={(e) => setSource(e.target.value)}
                   >
-                    <option value="reference">
-                      Chronicle EURC/USD ÷ USDC/USD
-                    </option>
+                    <option value="reference">{sourceNames.eurc}</option>
                     <option value="scenario">
                       Synthetic scenario · 1.10 / 1.20 / 1.00
                     </option>
@@ -259,15 +279,13 @@ export function CreatePool() {
                 <>
                   <Facts
                     items={[
-                      [
-                        "Initial provider seed",
-                        `${fmt(review.seed)} USDC`,
-                      ],
+                      ["Initial provider seed", `${fmt(review.seed)} USDC`],
                       ["Protocol gain fee", "Fixed 1%"],
                       ["Fees taken from", "Positive realized gains only"],
                       ["Factory limit", "32 registered markets"],
                     ]}
                   />
+                  <TwoStepNote fee={review.priceUpdateFee} />
                   <ActionButton onClick={() => void confirm()}>
                     Create and fund market
                   </ActionButton>
@@ -301,13 +319,19 @@ export function CreatePool() {
             items={[
               ["Approved protected assets", "EURC · cirBTC"],
               ["Approved backing", "USDC"],
-              ["Approved prices", "Chronicle reference · EURC scenario"],
+              [
+                "Approved prices",
+                `${config.oracle === "pyth" ? "Pyth" : "Chronicle"} reference · EURC scenario`,
+              ],
               ["Position cap", "100 open positions; 0.01 minimum entry claim"],
               ["Creation limit", "2 markets per wallet; 22 community slots"],
               ["Creator control", "Immutable terms; no seizure function"],
             ]}
           />
-          <Risk provider synthetic={asset === "eurc" && source === "scenario"} />
+          <Risk
+            provider
+            synthetic={asset === "eurc" && source === "scenario"}
+          />
           <RouteLink className="hero-link" to="/faucet?asset=usdc">
             Get testnet USDC ↗
           </RouteLink>

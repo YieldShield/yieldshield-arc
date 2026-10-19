@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { buildAgentManifest, buildLlmsTxt } from "./src/agent-manifest.mjs";
@@ -56,8 +56,35 @@ function agentManifest(): Plugin {
   };
 }
 
+/** Development twin of api/pyth-update.js: same handler, key from PYTH_API_KEY or the ignored .secrets/pyth-api-key. */
+function pythProxy(): Plugin {
+  return {
+    name: "yieldshield-pyth-proxy",
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const url = new URL(req.url ?? "/", "http://localhost");
+        if (url.pathname !== "/api/pyth-update") return next();
+        const { pythUpdate } = await import("./api/pyth-update.js");
+        const key =
+          process.env.PYTH_API_KEY ??
+          (existsSync(".secrets/pyth-api-key")
+            ? readFileSync(".secrets/pyth-api-key", "utf8").trim()
+            : undefined);
+        const { status, body } = await pythUpdate(
+          url.searchParams.get("ids"),
+          key,
+        );
+        res.statusCode = status;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.setHeader("Cache-Control", "no-store");
+        res.end(JSON.stringify(body));
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), agentManifest()],
+  plugins: [react(), agentManifest(), pythProxy()],
   build: {
     rolldownOptions: {
       output: {

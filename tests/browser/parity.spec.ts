@@ -36,7 +36,9 @@ test("direct routes render and remain readable at 390px", async ({ page }) => {
 test("funding detour retains market, amount and role", async ({ page }) => {
   await page.goto("/protect?pool=cirbtc");
   await page.getByLabel("Amount", { exact: true }).fill("0.0005");
-  await page.getByRole("link", { name: "Get test cirBTC", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Get test cirBTC", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Get Arc testnet tokens." }),
   ).toBeVisible();
@@ -78,5 +80,7 @@ test("scenario market is labelled synthetic wherever it appears", async ({
   await expect(
     page.getByText("Synthetic 1.10 → 1.20 → 1.00 cycle").first(),
   ).toBeVisible();
-  await expect(page.getByText(/scenario market: its price is a public synthetic cycle/)).toBeVisible();
+  await expect(
+    page.getByText(/scenario market: its price is a public synthetic cycle/),
+  ).toBeVisible();
 });

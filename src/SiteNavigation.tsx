@@ -147,7 +147,9 @@ export function Navigation() {
       </nav>
       <div className="sidebar-bottom">
         <small>
-          {localMode ? "Local Anvil · chain 31337" : "Arc Testnet · chain 5042002"}
+          {localMode
+            ? "Local Anvil · chain 31337"
+            : "Arc Testnet · chain 5042002"}
         </small>
       </div>
     </aside>
