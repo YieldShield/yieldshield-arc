@@ -13,12 +13,13 @@
 | Install command | `npm ci --ignore-scripts` |
 | Build command | `npm run build`, which runs `tsc --noEmit` and then `vite build` |
 | Output directory | `dist` |
-| Environment variables | None. Public identities live in `config/deployment.json`, and the production build cannot enable local-chain mode |
+| Environment variables | **`PYTH_API_KEY`**: server-side only (Production, plus Preview if previews should transact), used by `api/pyth-update.js`. Never prefix it with `VITE_`, which would bundle it into browser code. Public identities live in `config/deployment.json`, and the production build cannot enable local-chain mode |
+| Serverless function | `api/pyth-update.js` (Node runtime): a same-origin proxy to Pyth Hermes for this deployment's three feed IDs only. Without `PYTH_API_KEY` it answers 503, and the app explains that price updates are not configured |
 | Deployment protection | Keep it on for preview deployments, as on the other YieldShield chain sites |
 
-`vercel.json` is the template's file, unchanged except for one added rule:
+`vercel.json` is the template's file with two changes:
 
-- **SPA rewrite:** every path outside `/assets/` serves `index.html`. Static files, including `/agent.json`, `/llms.txt`, `/abi/*.json` and the icons, are served first.
+- **SPA rewrite:** every path outside `/assets/` and `/api/` serves `index.html`. `/api/` was added so the price proxy is reachable. Static files, including `/agent.json`, `/llms.txt`, `/abi/*.json` and the icons, are served first.
 - **Security headers on every path:**
   - `Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'`
   - `X-Frame-Options: DENY`
@@ -36,14 +37,15 @@
 
 ## Steps for David (not done by automation)
 
-1. In the YieldShield Vercel team, create the project `yieldshield-arc` from `YieldShield/yieldshield-arc` with the settings above.
+1. In the YieldShield Vercel team, create the project `yieldshield-arc` from `YieldShield/yieldshield-arc` with the settings above. Add `PYTH_API_KEY` as a sensitive, server-side environment variable.
 2. Add the domain `arc.yieldshield.ai` and set the DNS record Vercel asks for.
 3. Deploy `main`, then check:
    - the custom domain serves the current bundle;
    - `/status` shows "Arc Testnet (Circle)", chain 5042002 and the manifest state;
    - `/agent.json` returns JSON with `"schema": "yieldshield-arc/agent-manifest/v1"`, and `/llms.txt` returns text;
+   - `/api/pyth-update?ids=<the three feed IDs, comma-separated>` returns `binary` and `parsed`, not 503. A request for any other ID returns 400;
    - the security headers are present (`curl -sI https://arc.yieldshield.ai/`);
    - at 390 px the page has no horizontal overflow (`npm run test:browser` covers this locally).
-4. While the manifest says `awaiting-testnet-usdc`, the site shows the pending state and keeps writes disabled. That is safe to publish. After `npm run verify:arc-testnet` marks the deployment verified, rebuild so the site and `/agent.json` carry the deployed addresses.
+4. While the manifest says `awaiting-pyth-api-key` (or any other pre-deployment state), the site shows the pending state and keeps writes disabled. That is safe to publish. After `npm run verify:arc-testnet` marks the deployment verified, rebuild so the site and `/agent.json` carry the deployed addresses.
 
 Each later release should be recorded here: commit, Vercel deployment ID, the checks run and their results.

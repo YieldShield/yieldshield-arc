@@ -1,16 +1,30 @@
 # Circle Developer Grants — YieldShield Arc
 
-**Status: draft, not submitted (19 October 2026).**
+**Status: draft, not submitted (updated 19 October 2026, afternoon).**
 - **Form:** the "Circle 2026 Cohort 2" Questbook form was read field by field. Nothing was entered, uploaded or submitted, and no terms were accepted.
 - **Repository:** `YieldShield/yieldshield-arc` is built and private.
-- **Deployment:** the Arc testnet deployment is waiting for faucet USDC and for fresh Chronicle feeds.
-- **Next step:** David reviews, records the video, funds the test wallets and submits.
+- **Oracle:** the reference oracle moved from Chronicle (stale for about 28 hours) to Pyth.
+- **Deployment:** both test wallets are funded. The Arc testnet deployment is waiting for a Pyth API key; Pyth's Hermes service has required one since 26 August 2026.
+- **Next step:** David gets the key, deploys and verifies, runs the journey, records the video and submits.
 
 Program page: https://www.circle.com/grant. Application portal: https://circle.questbook.app/ (open the "Circle 2026 Cohort 2" card, then "Submit Proposal").
 
 ## What changed
 
-This compares the [17 October application plan](../../../docs/grants/APPLICATION_PLAN_2026-10-17.md), which listed this program as "Rolling", with what was verified on 19 October.
+This compares the [17 October application plan](../../../docs/grants/APPLICATION_PLAN_2026-10-17.md), which listed this program as "Rolling" and the oracle as "Verify", with what was verified on 19 October.
+
+**Afternoon update: oracle switched to Pyth (approved by David).**
+- **Why.** Chronicle's Arc testnet feeds stopped on 18 October at 09:08 UTC and were still stale about 28 hours later. Chronicle's docs gave no notice.
+- **New pricing.**
+  - EURC = Pyth Crypto.EURC/USD ÷ Crypto.USDC/USD.
+  - cirBTC = Crypto.BTC/USD ÷ Crypto.USDC/USD, assuming cirBTC trades 1:1 with BTC. Pyth has no cirBTC feed.
+  - Limits: 120 s maximum age and a 1% confidence cap.
+- **Two signatures.** Pyth is a pull oracle. Every price-reading action is preceded by an `updatePriceFeeds` transaction with a fee of 1 wei of native USDC per price, in the scripts, the app and the agent recipes. The review screen explains the two signatures.
+- **Built and tested.** Local runs and the chain-5042002 rehearsal pass with MockPyth: 10 deployment steps and an 11-transaction second-wallet journey.
+- **Two open risks.**
+  - Hermes now requires an API key, which only the owner can request.
+  - Arc testnet's Pyth contract was not part of Pyth's 26 August upgrade, and its last successful update was on 22 September. Whether it accepts today's update payloads is unproven. The preflight simulates an update on chain, for free, before any USDC is spent.
+- **The Chronicle adapter stays as a tested option.**
 
 - **The program runs in cohorts, not strictly rolling.**
   - Cohort 2 is **open**: $135k available, 878 proposals, 14 accepted.
@@ -32,22 +46,20 @@ This compares the [17 October application plan](../../../docs/grants/APPLICATION
   - an investor deck.
 
   Every field is mandatory, with "N/A" allowed.
-- **Arc mainnet** has been live since 16 September 2026, and the program emphasizes moving from testnet to mainnet. Chainlink Data Feeds exist on Arc mainnet only. On Arc testnet, Chronicle is the live push oracle.
-- **The plan's open oracle question is resolved.**
-  - EURC is priced as Chronicle EURC/USD ÷ USDC/USD.
-  - cirBTC is priced by Chronicle CIRBTC/USDC.
-  - Values older than 3 hours are rejected.
-  - Testnet outages were measured and documented.
+- **Arc mainnet** has been live since 16 September 2026, and the program emphasizes moving from testnet to mainnet. Chainlink Data Feeds exist on Arc mainnet only.
+- **Oracle research.** Chronicle (push) was the only live feed found on Arc testnet in the morning. Its outages were measured, and it went stale; see the afternoon update above.
 - **The Arc Builders Fund is a different program.** It is Circle Ventures' venture fund, not this grant program.
 
 ## Check before submitting
 
 - [ ] **Deploy first, if at all possible.**
-  - Fund deployer `0x10D42586A65a98BCa4baFAa1bF5DCB10c820f50a` with one 20 USDC claim at https://faucet.circle.com (network: Arc Testnet).
-  - When the Chronicle feeds are fresh, run `npm run deploy:arc-testnet -- --broadcast`, then `npm run verify:arc-testnet`.
-  - Fund the journey wallet `0x424cb86EEd3Bf1101C0f2b6f74Db2C291284456d` with 20 USDC and 20 EURC, and run `npm run journey:arc-testnet -- --broadcast`.
+  - Done: the deployer `0x10D42586A65a98BCa4baFAa1bF5DCB10c820f50a` holds 20 USDC, and the journey wallet `0x424cb86EEd3Bf1101C0f2b6f74Db2C291284456d` holds 20 USDC and 20 EURC.
+  - Get a Pyth API key at https://pythdata.app/signup (free trial, paid plans for ongoing use). Save it as `.secrets/pyth-api-key`.
+  - Run `npm run deploy:arc-testnet`. Its simulation shows whether Arc testnet's Pyth contract accepts today's updates.
+  - If it does, run `npm run deploy:arc-testnet -- --broadcast`, then `npm run verify:arc-testnet`, then `npm run journey:arc-testnet -- --broadcast`.
   - Then change "Are you live on Arc?" to "Yes, but only live on Arc testnet", and add the factory explorer link to the traction field.
-- [ ] Do one real MetaMask transaction on the hosted site. Every recorded run so far used test providers or scripted keys.
+  - If the simulation fails, decide among Pyth Pro, waiting for Chronicle, or a clearly labelled reference oracle (see Open questions in the report).
+- [ ] Do one real MetaMask transaction on the hosted site, which needs `PYTH_API_KEY` set in Vercel. Every recorded run so far used test providers or scripted keys.
 - [ ] **Hosting.** Create the Vercel project and `arc.yieldshield.ai` ([hosting](../HOSTING.md)). Until then, the Project website field points to a page that does not exist; use https://yieldshield.ai instead.
 - [ ] **Repository visibility.** The repository is private.
   - **Option 1:** make it public (Avalanche and Stellar are public) and keep the GitHub field.
@@ -157,7 +169,7 @@ Holders of EUR or BTC exposure on Arc have no simple way to keep their upside wh
 **What is your solution to that problem?** (limit 750)
 
 ```
-A holder deposits EURC or cirBTC and gets a fixed USDC claim, priced at entry by Chronicle and reserved at 150% by capital providers in USDC. Before maturity the holder either keeps the asset, paying 12% of any realized gain (10% to providers), or surrenders it for the fixed USDC claim. After maturity anyone can settle, and owners pull their USDC. Stale prices pause entries and asset exits, but never backing exits. Contracts use only USDC's 6-decimal ERC-20 view; USDC is also gas. A static agent manifest lists markets, terms, freshness rules, safety checks and unsigned transaction recipes. Next: CCTP exits and MCP tools.
+A holder deposits EURC or cirBTC and gets a fixed USDC claim, priced at entry by Pyth and reserved at 150% by capital providers in USDC. Before maturity the holder either keeps the asset, paying 12% of any realized gain (10% to providers), or surrenders it for the fixed USDC claim. After maturity anyone can settle, and owners pull their USDC. Stale prices pause entries and asset exits, but never backing exits. Contracts use only USDC's 6-decimal ERC-20 view; USDC is also gas. A static agent manifest lists markets, terms, freshness rules, safety checks and unsigned transaction recipes. Next: CCTP exits and MCP tools.
 ```
 
 **Describe your team's track record of acquiring the type of users/customers that your solution will require.** (limit 500)
@@ -275,7 +287,7 @@ Capped Arc mainnet release after a separately funded audit and legal review | US
 **Audit findings so far** (limit 500)
 
 ```
-N/A. No internal or third-party audit has been conducted. The code was developed with substantial AI assistance (AI agents are tools, not team members) and is reviewed by the founders. It has 60 Foundry tests (5 fuzz) and a rehearsed deployment; these are not an audit. A capped mainnet release waits for an independent audit.
+N/A. No internal or third-party audit has been conducted. The code was developed with substantial AI assistance (AI agents are tools, not team members) and is reviewed by the founders. It has 72 Foundry tests (6 fuzz) and a rehearsed deployment; these are not an audit. A capped mainnet release waits for an independent audit.
 ```
 
 ### Deck and demo
@@ -326,12 +338,12 @@ N/A. No internal or third-party audit has been conducted. The code was developed
   - immutable pool and factory;
   - USDC backing through Arc's ERC-20 interface;
   - support for protected assets with 6 to 18 decimals;
-  - the Chronicle adapter with SelfKisser whitelisting and a USDC/USD quote, and the Chainlink adapter for mainnet;
+  - the Pyth pull-oracle adapter (feed ÷ USDC/USD, 120 s, 1% confidence), with the two-step update flow in the scripts, app and agent manifest; the Chronicle adapter as an option; and the Chainlink adapter for mainnet;
   - the scenario oracle;
-  - 60 Foundry tests, 5 of them fuzz tests.
+  - 72 Foundry tests, 6 of them fuzz tests.
 - **App and agent files:** the static app; `/agent.json`, `/llms.txt` and the ABIs.
 - **Scripts:** deploy, verify, rehearsal, fork check and the second-wallet journey.
-- **Evidence:** 56 local transactions, 6 browser-signed local transactions, the full rehearsal on a chain-5042002 Anvil, and the fork check against the real Chronicle feeds.
+- **Evidence:** 52 local transactions and 9 browser-signed local transactions (with Pyth updates), the full Pyth rehearsal on a chain-5042002 Anvil, and the earlier fork check against the real Chronicle feeds.
 
 **Shared and earlier work, also not billed:**
 - the split-risk core inherited from the Avalanche template;
@@ -368,7 +380,8 @@ N/A. No internal or third-party audit has been conducted. The code was developed
      - `scripts/deploy-arc-testnet.mjs`: one balance with two views, and the 20 gwei fee floor.
    - **EURC:**
      - `contracts/src/ShieldFactory.sol`, `allowed()`;
-     - `contracts/src/ShieldOracles.sol`: `ShieldChronicleOracle`, EURC/USD ÷ USDC/USD.
+     - `contracts/src/ShieldPyth.sol`: `ShieldPythOracle`, EURC/USD ÷ USDC/USD;
+     - `src/pyth.ts` and the review screen: the Pyth update as the first of two signatures.
    - **cirBTC:** `assetUnit` in `ShieldPool.sol` (8 decimals), and `contracts/test/ShieldDecimals.t.sol`.
    - **Agent surface:** `src/agent-manifest.mjs`, then `/agent.json` in the browser.
 3. **2:30–4:15, integration demo.** Use the Arc testnet deployment if verified by then; otherwise the local chain, clearly labelled:
@@ -385,10 +398,10 @@ N/A. No internal or third-party audit has been conducted. The code was developed
 
 ## David-only actions
 
-1. Claim 20 USDC from https://faucet.circle.com (Arc Testnet) for the deployer `0x10D42586A65a98BCa4baFAa1bF5DCB10c820f50a`. The faucet has reCAPTCHA.
-2. Claim 20 USDC and 20 EURC for the journey wallet `0x424cb86EEd3Bf1101C0f2b6f74Db2C291284456d`.
-3. Once the Chronicle feeds are fresh, run the deploy, verify and journey commands, then commit the manifest and evidence ([operations](../OPERATIONS.md)).
-4. Create the Vercel project `yieldshield-arc` and the domain `arc.yieldshield.ai` ([hosting](../HOSTING.md)), and do one real MetaMask transaction.
+1. Done on 19 October: 20 USDC for the deployer `0x10D42586A65a98BCa4baFAa1bF5DCB10c820f50a`.
+2. Done on 19 October: 20 USDC and 20 EURC for the journey wallet `0x424cb86EEd3Bf1101C0f2b6f74Db2C291284456d`.
+3. Get a Pyth API key (owner sign-up) and save it as `.secrets/pyth-api-key`. Run the deploy preflight. If its on-chain update simulation passes, broadcast, verify and run the journey, then commit the manifest and evidence ([operations](../OPERATIONS.md)). If it fails, choose an oracle option before spending anything.
+4. Create the Vercel project `yieldshield-arc` and the domain `arc.yieldshield.ai`, with `PYTH_API_KEY` as a server-side variable ([hosting](../HOSTING.md)), and do one real MetaMask transaction.
 5. Decide on repository visibility, and confirm Santiago's city and GitHub.
 6. Record the video, then put the transcript, code screenshots and a deck (or N/A) in one Drive folder with view and download access.
 7. Resolve the commitment questions across applications, update the [funding register](../../../docs/grants/FUNDING_REGISTER.md), then read the terms and submit on Questbook.

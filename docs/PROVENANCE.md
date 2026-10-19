@@ -15,6 +15,7 @@ YieldShield Arc is derived from the MIT `yieldshield-avalanche` template ("Yield
 - no native-asset path;
 - support for protected assets with 6 to 18 decimals;
 - Circle EURC and cirBTC markets;
+- the Pyth pull-oracle adapter (vendored minimal interface) and the two-step update flow in the scripts, app and agent manifest;
 - the Chronicle adapter with SelfKisser whitelisting and a USDC/USD quote;
 - the Chainlink adapter's quote feed, for the mainnet path;
 - Arc fee floors, the rehearsal and the fork check;

@@ -8,21 +8,23 @@ USDC-backed split-risk markets on Circle's Arc testnet. A holder deposits Circle
 
 > Arc testnet only and unaudited. Testnet USDC, EURC and cirBTC come from Circle's faucet and have no monetary value. Do not use this code with real funds.
 
-## Status — 19 October 2026
+## Status — 19 October 2026, afternoon
 
-**Contracts are built, tested and rehearsed, and the deployment is waiting for testnet USDC.** The manifest state is `awaiting-testnet-usdc`, and the website keeps writes disabled until a verified deployment exists.
+**Contracts, app and scripts are built, tested and rehearsed with Pyth. The test wallets are funded. The Arc testnet deployment is waiting for access to Pyth price updates.** The manifest state is `awaiting-pyth-api-key`. The website keeps writes disabled until a verified deployment exists.
 
-- **Deployer:** `0x10D42586A65a98BCa4baFAa1bF5DCB10c820f50a`, a new dedicated test signer.
-  - **Funding:** it needs one claim of 20 USDC from https://faucet.circle.com (network: Arc Testnet).
-  - **Why it is unfunded:** the faucet uses reCAPTCHA, so automation did not request funds.
-- **Oracle feeds:** deployment also needs the Chronicle feeds on Arc testnet to be fresh. They had not updated since 18 October 09:08 UTC when checked ([preflight evidence](docs/evidence/arc-testnet-preflight.json)).
+- **Oracle switch.** Chronicle's Arc testnet feeds were stale for about 28 hours (since 18 October 09:08 UTC). David approved moving the reference prices to Pyth: EURC = EURC/USD ÷ USDC/USD; cirBTC = BTC/USD ÷ USDC/USD, assuming cirBTC tracks BTC.
+- **Blocker.** Pyth's Hermes service has required an API key since 26 August 2026. Every update request without one returns HTTP 401, and the key needs an owner sign-up. A second risk: Arc testnet's Pyth contract (`0x2880…C17B43`) was not part of Pyth's upgrade, and its last successful update was on 22 September. The deploy preflight therefore simulates an update on chain, for free, before anything is sent ([preflight evidence](docs/evidence/arc-testnet-preflight.json)).
+- **Deployer:** `0x10D42586A65a98BCa4baFAa1bF5DCB10c820f50a`, a dedicated test signer. It holds 20 USDC; the plan needs about 15.96 USDC.
+- **Journey wallet:** `0x424cb86EEd3Bf1101C0f2b6f74Db2C291284456d`. It holds 20 USDC and 20 EURC.
 
 Evidence so far:
 
-- **Full rehearsal:** the real `deploy-arc-testnet.mjs` and `verify-arc-testnet.mjs` were run against an Anvil using Arc's chain ID 5042002 and its 20 gwei base fee, with stand-ins at the canonical Arc addresses. Result: 8 transactions, verified, and a rerun sent nothing. A second wallet then completed the 8-transaction journey script ([evidence](docs/evidence/arc-rehearsal.json)).
-- **Real Chronicle feeds, on a fork:** on a local fork of Arc testnet, the price adapter whitelisted itself through Chronicle's real SelfKisser. It read 1.123482 USDC per EURC and 81,827.183708 USDC per cirBTC, and correctly rejected both as stale under the 3-hour limit ([evidence](docs/evidence/chronicle-fork-check.json)).
-- **Local journey:** 56 transactions on chain 31337, plus 6 browser-signed local transactions ([evidence](docs/evidence/local-journey.json), [browser receipts](docs/evidence/e2e/browser-receipts.json)).
-- **Tests:** 60 Solidity tests (5 fuzz), 19 JavaScript tests and 12 browser tests pass.
+- **Full rehearsal (Pyth):** the real deploy and verify scripts ran against an Anvil using Arc's chain ID 5042002 and its 20 gwei base fee, with MockPyth at the real Pyth address.
+  - **Deployment:** 10 transactions, including 2 price updates, then verified. A rerun sent nothing.
+  - **Second wallet:** it then completed an 11-transaction journey, with a price update before providing, protecting and the asset exit ([evidence](docs/evidence/arc-rehearsal.json)).
+- **Local journey (Pyth):** 52 transactions on chain 31337, plus 9 browser-signed local transactions, including the two-step updates ([evidence](docs/evidence/local-journey.json), [browser receipts](docs/evidence/e2e/browser-receipts.json)).
+- **Earlier Chronicle fork check:** the Chronicle adapter worked against the real feeds and correctly rejected them as stale ([evidence](docs/evidence/chronicle-fork-check.json)). The Chronicle adapter remains a tested option.
+- **Tests:** 72 Solidity tests (6 fuzz), 21 JavaScript tests and 12 browser tests pass.
 
 Local and rehearsal results are not Arc testnet activity. No users, revenue, TVL, audit, partnership or mainnet readiness is claimed.
 
@@ -34,8 +36,8 @@ Local and rehearsal results are not Arc testnet activity. No users, revenue, TVL
 
 | Market | Price source | Notes |
 |---|---|---|
-| EURC reference | Chronicle EURC/USD ÷ USDC/USD | Values older than 3 hours are rejected |
-| cirBTC reference | Chronicle CIRBTC/USDC | Values older than 3 hours are rejected |
+| EURC reference | Pyth Crypto.EURC/USD ÷ Crypto.USDC/USD | Pull oracle: each price-reading action is preceded by a price update. Values older than 120 s or with confidence wider than 1% are rejected |
+| cirBTC reference | Pyth Crypto.BTC/USD ÷ Crypto.USDC/USD | Assumes cirBTC trades 1:1 with BTC (Pyth has no cirBTC feed); same limits |
 | EURC scenario lab | Synthetic 1.10 → 1.20 → 1.00 USDC cycle, changing every 120 s | Labelled synthetic everywhere; never a fallback |
 
 ## How it works
@@ -46,6 +48,7 @@ Local and rehearsal results are not Arc testnet activity. No users, revenue, TVL
   - surrender the asset for its fixed USDC claim.
 - **Mature.** Each epoch lasts at most 30 days. After maturity, anyone can settle the remaining positions: each owner gets a segregated USDC credit to claim, and providers take the asset.
 - **Provide.** Deposit USDC for provider shares. Deposits and redemptions are frozen while any protection is open, which prevents providers from redeeming at a NAV that hides an unrealized shortfall. Redemption needs a 120-second notice and returns a basket of USDC and surrendered assets. Gain fees are claimed separately.
+- **Prices are pushed, then used.** Pyth is a pull oracle. Before protecting, taking an asset exit, creating a reference market, or providing into a pool that holds surrendered assets, the caller sends a Pyth price update: fee 1 wei of native USDC per price, plus gas. The action follows as a second transaction within 120 s. The app, the deploy script and the journey script all do this.
 - **Stale prices fail closed.**
   - **Revert while stale:** new protection, asset exits and market creation.
   - **Keep working:** backing exits and settlement, which need no price.
@@ -59,9 +62,9 @@ Local and rehearsal results are not Arc testnet activity. No users, revenue, TVL
 - the network, assets, markets and terms;
 - oracle freshness rules;
 - the safety checks to run before any transaction;
-- recipes for unsigned transactions (protect, both exits, settlement, provide, redeem, claim).
+- recipes for unsigned transactions (protect, both exits, settlement, provide, redeem, claim), with the Pyth price update as the first transaction wherever the action reads a price.
 
-Agents never sign, hold keys or send native value. The funded next step is to expose these as YieldShield MCP tools; see the [application draft](docs/grants/CIRCLE_DEVELOPER_GRANT_2026-10-19.md).
+Agents never sign or hold keys. The only native value they ever prepare is the Pyth update fee. The site's `/api/pyth-update` proxy serves update data for its three feeds, keeping the Hermes API key server-side. The funded next step is to expose these as YieldShield MCP tools; see the [application draft](docs/grants/CIRCLE_DEVELOPER_GRANT_2026-10-19.md).
 
 ## Run and verify
 
@@ -75,7 +78,7 @@ npm test                     # JavaScript unit tests
 npm run test:contracts       # Solidity tests, including fuzz cases
 npm run test:browser         # public routes, mobile, wallet, agent files
 npm run rehearse:arc-testnet # full deploy + verify + journey on a chain-5042002 Anvil (port 8567)
-npm run check:chronicle-fork # adapter against the real Arc testnet Chronicle feeds, on a local fork
+npm run check:chronicle-fork # the (optional) Chronicle adapter against the real Arc testnet feeds, on a local fork
 ```
 
 Local transactions only:
@@ -87,7 +90,7 @@ node scripts/local-web.mjs   # local-chain preview at 127.0.0.1:5204
 SHIELD_LOCAL_E2E=1 npm run test:browser -- tests/browser/local-lifecycle.spec.ts
 ```
 
-Deploying (`npm run deploy:arc-testnet`, a read-only preflight until `--broadcast`), verification (`npm run verify:arc-testnet`) and the second-wallet journey (`npm run journey:arc-testnet`) are described in [operations](docs/OPERATIONS.md). They need dedicated test wallets in the ignored `.secrets/` directory. Never use a key that holds real funds.
+Deploying (`npm run deploy:arc-testnet`, a read-only preflight until `--broadcast`), verification (`npm run verify:arc-testnet`) and the second-wallet journey (`npm run journey:arc-testnet`) are described in [operations](docs/OPERATIONS.md). They need dedicated test wallets and a Pyth API key in the ignored `.secrets/` directory. Never use a key that holds real funds.
 
 Further reading:
 

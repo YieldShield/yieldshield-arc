@@ -56,7 +56,30 @@ These are unchanged from the template unless noted.
 
 ## Oracles
 
-**`ShieldChronicleOracle`** reads Chronicle `tryReadWithAge()` and rejects:
+**`ShieldPythOracle`** is the reference adapter on Arc testnet since 19 October 2026. It reads `getPriceNoOlderThan(id, 120 s)` from Pyth `0x2880…C17B43` and returns feed ÷ USDC/USD in USDC base units:
+
+- EURC uses Crypto.EURC/USD.
+- cirBTC uses Crypto.BTC/USD.
+
+It rejects:
+
+- never-published or stale values. Any Pyth revert becomes `INVALID_OR_STALE_PRICE`.
+- non-positive prices, and exponents outside −18…0 (`INVALID_PRICE`);
+- zero confidence, or a confidence interval wider than 100 bps of the price (`CONFIDENCE`);
+- a result that rounds to zero.
+
+Pyth semantics also apply: a publish time up to `maxAge` ahead of block time (clock skew) is accepted. `age()` reports the age of the older stored publish time for monitoring.
+
+**Pull-oracle risks**
+
+- **Update timing.** Each price-reading action needs a separate `updatePriceFeeds{value: fee}` transaction first, then the action within 120 s. If the second transaction is delayed (a slow wallet confirmation, congestion), the action reverts on the stale price or on its own slippage bound. Nothing is lost except gas, and the user reviews again.
+- **Who supplies the price.** Anyone can push any validly signed Pyth price, including an older one that is still within 120 s. The pool uses the price at the time of the action and bounds the outcome with the user's own reviewed minimum (0.5% tolerance). Users and agents should quote from fresh Hermes data, not from the stored on-chain price.
+- **Service dependency.** Update data comes from Pyth's Hermes, which has required an API key since 26 August 2026. Without it, no reference action is possible. The site's `/api/pyth-update` proxy keeps the key server-side and forwards only this deployment's three feed IDs.
+- **Contract generation.** Arc testnet's Pyth contract was not part of Pyth's upgrade, and its last successful update was on 22 September 2026. The deploy preflight simulates an update on chain before anything is sent.
+- **cirBTC is priced as BTC.** Pyth has no cirBTC feed. A cirBTC depeg from BTC would not appear in the price, so providers would bear that basis risk. A cirBTC-specific feed, or a reserves check, is needed before any real-value use.
+- **USDC/USD.** The USDC/USD division moves the USDC claim with a USDC depeg, rather than assuming one dollar.
+
+**`ShieldChronicleOracle`** (a tested option; it was the testnet reference until its feeds went stale) reads Chronicle `tryReadWithAge()` and rejects:
 
 - unavailable or zero values;
 - future-dated values;
@@ -79,20 +102,19 @@ Its `maxAge` is at most 25 hours. It is tested but not deployed on testnet.
 
 No reference market ever falls back to the scenario oracle. The scenario oracle is a public deterministic cycle, labelled synthetic in the app and in `/agent.json`.
 
-**Known feed reliability on testnet** (19 September – 18 October 2026):
+**Known Chronicle reliability on testnet** (19 September – 19 October 2026). This is why the reference oracle moved to Pyth:
 
 - median update interval: 52 minutes;
 - one outage of about 34 hours on 7–8 October;
-- a further outage from 18 October 09:08 UTC, still ongoing when checked on 19 October.
-
-Users of the testnet markets should expect such pauses.
+- a further outage from 18 October 09:08 UTC, still ongoing at 13:10 UTC on 19 October (about 28 hours).
 
 ## Agent surface
 
 `/agent.json`, `/llms.txt` and `/abi/*.json` are static files generated from the public deployment manifest. They contain no secrets and prepare nothing on their own. They tell agents to:
 
 - never sign;
-- emit only unsigned zero-value transactions;
+- emit only unsigned transactions: zero value for every YieldShield call, and exactly the Pyth fee on a Pyth update;
+- push the Pyth update immediately before a price-reading action;
 - run the listed safety checks;
 - simulate calls from the user's address.
 
@@ -116,6 +138,7 @@ Users of the testnet markets should expect such pauses.
 - browser and RPC reliability;
 - user signing;
 - Arc testnet availability;
-- Chronicle feed liveness.
+- Pyth Hermes availability (and its API key), and whether Arc testnet's Pyth contract keeps accepting updates;
+- Chronicle feed liveness, for the Chronicle option.
 
 **What tests do not replace.** Tests and rehearsals do not substitute for an independent audit, an assessment of real-world liquidity and oracles, legal review or production governance.

@@ -30,7 +30,7 @@ Reference: `yieldshield-avalanche` (YieldShield Alpine) at `dfb39a8`. Comparison
 | Protected assets had 18 decimals; prices per 1e18 | 6–18 decimals; prices per `10^decimals` (`assetUnit`); the cap is 100,000 whole units | Circle's assets on Arc are EURC (6) and cirBTC (8) |
 | Backing: project-issued `aDEMO` faucet token or `bvaDEMO` vault receipts | Arc testnet USDC (ERC-20 interface, 6 decimals) only | Real Circle USDC is Arc's settlement asset |
 | 500-unit creation seed | 5 USDC | Testnet USDC is rationed to 20 per address every 2 hours |
-| Chainlink AVAX/USD adapter | Chronicle adapter (EURC/USD ÷ USDC/USD; CIRBTC/USDC) with SelfKisser whitelisting and a 3-hour limit. The Chainlink adapter is kept with an optional quote feed for the mainnet path | Chainlink Data Feeds are on Arc mainnet, not testnet; Chronicle is the live push oracle on testnet |
+| Chainlink AVAX/USD adapter | Pyth pull adapter (EURC/USD ÷ USDC/USD; BTC/USD ÷ USDC/USD), 120 s limit and 1% confidence cap. Each price-reading action is preceded by an `updatePriceFeeds` transaction. The Chronicle adapter (3-hour limit, SelfKisser whitelisting) and the Chainlink adapter (with an optional quote feed, for the mainnet path) are kept as tested options | Chainlink Data Feeds are on Arc mainnet, not testnet. Chronicle's testnet push feeds went stale for about 28 hours on 18–19 October, so David approved Pyth |
 | Scenario cycle 25 / 35 / 15 aDEMO per AVAX | 1.10 / 1.20 / 1.00 USDC per EURC | Same deterministic purpose, with EURC units |
 | Fees chosen by the node | Signed `maxFeePerGas` of at least 40 gwei | Arc drops transactions below its 20 gwei minimum base fee |
 | Seed transfers decoded from any log | Matched on the USDC contract as emitter | Arc also emits an 18-decimal system `Transfer` for USDC moves |
@@ -44,7 +44,8 @@ Reference: `yieldshield-avalanche` (YieldShield Alpine) at `dfb39a8`. Comparison
 
 ## Added
 
-- Market cards and the status page show the price age against its limit, and stale prices are explained in plain language.
+- Market cards and the status page show the Pyth publish time and age against its limit. Stale prices are explained in plain language.
+- A two-signature flow (Pyth update, then the action) with a fee preview, and a same-origin `/api/pyth-update` proxy that keeps the Hermes API key server-side.
 - The interface keeps 0.1 USDC unspent for gas.
 - `/agent.json`, `/llms.txt`, `/abi/*.json` and the `/agents` page: a machine-readable description with safety checks and recipes for unsigned transactions.
 - The rehearsal on a chain-5042002 Anvil, the fork check against the real Chronicle feeds, and the second-wallet testnet journey script.

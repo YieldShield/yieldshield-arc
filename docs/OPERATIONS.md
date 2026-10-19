@@ -2,12 +2,12 @@
 
 ## Arc testnet deployment
 
-**State on 19 October 2026: `awaiting-testnet-usdc`.**
+**State on 19 October 2026, afternoon: `awaiting-pyth-api-key`.** The wallets are funded; the price-update service is the blocker.
 
-| Wallet | Address | Needs (from https://faucet.circle.com, network "Arc Testnet") |
-|---|---|---|
-| Deployer (dedicated test signer) | `0x10D42586A65a98BCa4baFAa1bF5DCB10c820f50a` | One USDC claim (20 USDC): 15 USDC for three 5 USDC market seeds, plus about 0.7 USDC of gas with 30% headroom |
-| Journey wallet (second, separate) | `0x424cb86EEd3Bf1101C0f2b6f74Db2C291284456d` | One USDC claim and one EURC claim (20 each) |
+| Wallet | Address | Holds (checked 13:10 UTC) | Needs |
+|---|---|---|---|
+| Deployer (dedicated test signer) | `0x10D42586A65a98BCa4baFAa1bF5DCB10c820f50a` | 20 USDC | About 15.96 USDC: 15 USDC for three 5 USDC market seeds, about 0.96 USDC of gas with headroom, and a few wei of Pyth fees |
+| Journey wallet (second, separate) | `0x424cb86EEd3Bf1101C0f2b6f74Db2C291284456d` | 20 USDC, 20 EURC | 2 USDC to provide, 2 EURC to protect, gas and Pyth fees |
 
 **Wallets.**
 - Both wallets were created on 19 October 2026 with `cast wallet new`.
@@ -15,9 +15,24 @@
 - Use only faucet test USDC and EURC. Never fund either wallet from an account that holds real funds.
 - Anvil's well-known development account #1 (`0x7099…79C8`) is blocklisted on Arc testnet. Never use it there.
 
-**Faucet.** It is protected by reCAPTCHA and limited to one request per token, network and address every 2 hours. Funding is therefore a manual step.
+**Faucet.** https://faucet.circle.com is protected by reCAPTCHA and limited to one request per token, network and address every 2 hours. Funding is therefore a manual step.
 
-**Oracle prerequisite.** The reference markets are created against Chronicle feeds, which must be younger than 3 hours (`maxPriceAge` 10,800 s). The 19 October preflight found all three feeds about 22 hours old ([evidence](evidence/arc-testnet-preflight.json)). On 7–8 October, a similar outage lasted about 34 hours. If the feeds are stale, the preflight refuses to start and names the stale feed. Retry after Chronicle updates. Check the age with:
+### Oracle prerequisite: Pyth
+
+The reference markets use Pyth on Arc testnet (`0x2880aB155794e7179c9eE2e38200202908C17B43`). Pyth is a pull oracle, so a fresh price is pushed in its own transaction right before each step that reads it.
+
+**API key.**
+- Hermes (the service that signs price updates) has required an API key since 26 August 2026. Get one from Pyth Terminal (https://pythdata.app/signup; "a free trial is included, paid plans cover ongoing use").
+- Store it in the ignored `.secrets/pyth-api-key` (one line, mode 600), or export `PYTH_API_KEY`.
+- For the hosted site, set `PYTH_API_KEY` as a server-side Vercel environment variable ([hosting](HOSTING.md)).
+- Never commit the key or put it in browser code.
+
+**Compatibility check.** Arc testnet's Pyth contract was not part of Pyth's upgrade. Its last successful update was on 22 September. The preflight therefore fetches a real update and simulates `updatePriceFeeds` on chain (`eth_call`, free). If the simulation fails, the preflight names it and nothing is sent. In that case, see the options in [research](RESEARCH_AND_SCOPE.md):
+- Pyth Pro;
+- waiting for Chronicle;
+- a clearly labelled reference oracle (needs approval).
+
+**Chronicle option.** Set `"oracle": "chronicle"` in the manifest to use the Chronicle adapters instead. Their feeds must then be younger than 3 hours (`maxPriceAge` 10,800 s). They were about 28 hours stale on 19 October. Check with:
 
 ```sh
 cast call 0x4640b2AF58f6Efc32b524C61e59C99d3845aD7C1 'tryReadWithAge()(bool,uint256,uint256)' --rpc-url https://rpc.testnet.arc.io
@@ -30,32 +45,44 @@ cast call 0x4640b2AF58f6Efc32b524C61e59C99d3845aD7C1 'tryReadWithAge()(bool,uint
    - the chain ID;
    - the signer, which must equal `deployer` in the manifest;
    - the identities of the USDC, EURC and cirBTC contracts;
-   - the three Chronicle feeds against `maxPriceAge`;
-   - the SelfKisser's code;
+   - with Pyth:
+     - it fetches a Hermes update for EURC/USD, USDC/USD and BTC/USD;
+     - it checks each value's age, exponent and confidence, and prints both market prices;
+     - it reads `getUpdateFee`;
+     - it **simulates `updatePriceFeeds` on chain**.
+
+     With Chronicle, it checks the three feeds against `maxPriceAge` and the SelfKisser's code;
    - that `contracts/out` was compiled from the current sources;
    - the git state;
    - the funding, against both views of the single USDC balance. The native view must cover gas plus seeds, and the ERC-20 view must cover the seeds.
 
    It never broadcasts.
-3. When the preflight passes, `npm run deploy:arc-testnet -- --broadcast` executes the plan in 8 steps:
-   - deploy the scenario oracle, the two Chronicle adapters (each whitelists itself through the SelfKisser in its constructor) and the factory;
+3. When the preflight passes, `npm run deploy:arc-testnet -- --broadcast` executes the plan in 10 steps:
+   - deploy the scenario oracle, the two `ShieldPythOracle` adapters and the factory;
    - approve exactly 15 USDC to the factory;
-   - create three featured markets, each seeded with 5 USDC credited to the deployer as provider shares.
+   - push a Pyth update, then create the EURC market;
+   - push another Pyth update, then create the cirBTC market;
+   - create the scenario market.
 
-   Measured on the rehearsal: 13.42M gas limit, 13.28M used. Fees are signed at no less than 40 gwei, because Arc drops transactions with `maxFeePerGas` below its 20 gwei minimum base fee.
+   Each market is seeded with 5 USDC credited to the deployer as provider shares. Each update is its own signed step with a never-reused label (`pyth-update-<n>`), because its calldata is new every time.
+
+   Gas and fees:
+   - Every transaction's gas limit is its estimate plus 30%; a mined oracle read can cost more than estimated.
+   - Fees are signed at no less than 40 gwei, because Arc drops transactions with `maxFeePerGas` below its 20 gwei minimum base fee.
+   - Measured on the rehearsal: 17.52M of gas limits, 13.34M used. The funding estimate adds about 1M for real Pyth verification gas.
 4. `npm run verify:arc-testnet` checks the deployment and marks the manifest `deployed-and-verified` only if every check passes:
    - runtime code against `contracts/out`, with immutables masked;
    - factory wiring;
-   - each adapter's feeds, `maxAge` and Chronicle whitelisting;
+   - each adapter's Pyth contract, feeds (asset ÷ USDC/USD), `maxAge` and confidence limit (with Chronicle: feeds, `maxAge` and whitelisting);
    - asset identities;
    - terms and open epochs;
    - each creation receipt's `PoolCreated`, `JuniorDeposited` and 6-decimal USDC seed transfer. Transfers are matched on the USDC contract as emitter; Arc also emits an 18-decimal system `Transfer`.
    - every recorded receipt.
-5. `npm run journey:arc-testnet` checks the journey wallet and the price. With `--broadcast`, it runs a scripted journey from that second wallet:
-   - provide 2 USDC;
-   - protect 2 EURC;
+5. `npm run journey:arc-testnet` checks the journey wallet and simulates a price update. With `--broadcast`, it runs a scripted journey from that second wallet, with a Pyth update right before each price-reading step and a 30% gas margin on every transaction:
+   - update, then provide 2 USDC;
+   - update, then protect 2 EURC;
    - wait the exit delay;
-   - take a partial asset exit, then a backing exit;
+   - update, then take a partial asset exit; then a backing exit;
    - request notice and redeem.
 
    Evidence goes to `docs/evidence/arc-testnet-journey.json`.
@@ -87,14 +114,14 @@ These rules are unchanged from the template.
 
 ### Rehearsal
 
-`npm run rehearse:arc-testnet` runs everything above through the scripts' loopback-only overrides (`ARC_MANIFEST`, `ARC_RPC_URL`, `ARC_SIGNER_FILE`, `ARC_INTENTS_DIR`, `ARC_JOURNEY_WALLET`). The setup is:
+`npm run rehearse:arc-testnet` runs everything above through the scripts' loopback-only overrides (`ARC_MANIFEST`, `ARC_RPC_URL`, `ARC_SIGNER_FILE`, `ARC_INTENTS_DIR`, `ARC_JOURNEY_WALLET`, `ARC_PRICE_SOURCE=mock`). The setup is:
 - an Anvil on port 8567 with chain ID 5042002 and a 20 gwei base fee;
-- local stand-ins installed at the canonical Arc addresses: USDC, EURC, cirBTC, the three Chronicle feeds and the SelfKisser;
+- local stand-ins installed at the canonical Arc addresses: USDC, EURC, cirBTC, Pyth (MockPyth, charging 1 wei per price like the real contract), the three Chronicle feeds and the SelfKisser;
 - disposable signers under `.local/rehearsal/`.
 
-The steps are: preflight, broadcast, verify, a rerun that must send nothing, then the second-wallet journey. One difference from Arc: Anvil keeps native and ERC-20 balances separate, so the rehearsal sets both to the same 20 USDC. The overrides are refused for any non-loopback RPC.
+The steps are: preflight (including the update simulation), broadcast (10 steps), verify, a rerun that must send nothing, then the 11-transaction second-wallet journey. One difference from Arc: Anvil keeps native and ERC-20 balances separate, so the rehearsal sets both to the same 20 USDC. The overrides are refused for any non-loopback RPC.
 
-`npm run check:chronicle-fork` forks Arc testnet locally, deploys the adapters on the fork only, and checks them against the real Chronicle feeds and SelfKisser.
+`npm run check:chronicle-fork` forks Arc testnet locally, deploys the Chronicle adapters on the fork only, and checks them against the real Chronicle feeds and SelfKisser. Once a Pyth API key exists, the same fork approach can dress-rehearse the Pyth deployment against the real contract.
 
 ## Featured markets and replacement
 
@@ -115,7 +142,7 @@ Epochs cannot be extended. The deployer is both creator and protocol fee recipie
 
 **Replacement.** Within seven days of the earliest featured maturity:
 
-1. Run `npm run deploy:arc-testnet -- --replace-featured`. It needs 15 USDC for seeds, about 8.2M gas and fresh feeds.
+1. Run `npm run deploy:arc-testnet -- --replace-featured`. It needs 15 USDC for seeds, about 11M gas (including two Pyth updates and the 30% margin) and a working Pyth update.
 2. Run the same command with `--broadcast`. The manifest switches to the new markets only once all three exist, and records the superseded ones under `replacements[n].retired`.
 3. Run `npm run verify:arc-testnet`, then rebuild the site.
 
@@ -131,7 +158,13 @@ Epochs cannot be extended. The deployer is both creator and protocol fee recipie
   - uses exact approvals, slippage limits and chain-time deadlines;
   - records hashes before waiting for receipts.
 - **USDC is gas.** USDC deposits keep 0.1 USDC unspent, and wallets without testnet USDC are told to use the faucet first.
-- **Prices.** The status and market pages show each reference price's age against its limit. A stale reference is shown as stale and never replaced by the scenario price.
+- **Prices.**
+  - The status and market pages show the last on-chain Pyth price, its publish time and its age against the 120 s limit.
+  - Between actions, the on-chain price is normally older than the limit. Each price-reading action pushes a fresh one first.
+  - The review screen shows "2 · Pyth price update, then the action" with the fee and explains why.
+  - Quotes use the fresh Pyth values, computed exactly as the adapter computes them.
+  - A stale or invalid reference is never replaced by the scenario price.
+- **Price proxy.** In production, the browser gets update data from the same-origin function `/api/pyth-update`. It forwards only this deployment's three feed IDs and keeps the Hermes key server-side in `PYTH_API_KEY`. Without the key, it answers 503 and the app explains that price updates are not configured. In development, the Vite server runs the same handler with the key from `.secrets/pyth-api-key`. Local mode uses MockPyth.
 
 ## Expiry and provider liquidity
 
@@ -146,16 +179,20 @@ Epochs cannot be extended. The deployer is both creator and protocol fee recipie
 
 ## Reproducible local evidence
 
-- **Solidity:** 60 tests, including 5 fuzz tests of 256 runs each. They cover:
+- **Solidity:** 72 tests, including 6 fuzz tests of 256 runs each. They cover:
   - fairness, expiry, partial exits, rewards and reward-index solvency;
   - slots, factory limits, events and transfers;
   - 6-, 8- and 18-decimal assets;
+  - Pyth adapter edge cases: staleness, never-published feeds, clock skew, zero or negative prices, exponents, confidence, the USDC/USD division, fees, and a pool round trip with pull updates;
   - Chronicle and Chainlink adapter edge cases;
   - Arc-style USDC blocklisting;
   - rejection of native value.
-- **JavaScript:** 19 tests covering arithmetic, the agent manifest, freshness and review lifecycle.
-- **Browser:** 9 public tests, plus 3 local-chain tests (the signed journey, stale-price blocking, and the in-flight quote race).
-- **Local journey:** 56 transactions on chain 31337 ([evidence](evidence/local-journey.json)).
+- **JavaScript:** 21 tests covering arithmetic (including custom fee terms), the agent manifest, Pyth math and Hermes parsing, the price proxy's allowlist and key handling, freshness and review lifecycle.
+- **Browser:** 9 public tests, plus 3 local-chain tests:
+  - the signed journey, with two Pyth updates, each immediately before its action;
+  - a rejected price update that sends no protection;
+  - the in-flight quote race.
+- **Local journey:** 52 transactions on chain 31337 with MockPyth ([evidence](evidence/local-journey.json)).
 - **Rehearsal:** [evidence](evidence/arc-rehearsal.json).
 - **Fork check:** [evidence](evidence/chronicle-fork-check.json).
 
