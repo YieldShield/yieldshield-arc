@@ -92,6 +92,22 @@ const verifyRun = runScript("scripts/verify-arc-testnet.mjs");
 if (verifyRun.exitCode !== 0) throw new Error("Rehearsal verification failed");
 const resumeRun = runScript("scripts/deploy-arc-testnet.mjs", ["--broadcast"]);
 if (resumeRun.exitCode !== 0 || !/Nothing to send/.test(resumeRun.output)) throw new Error("A rerun should send nothing");
+// A second disposable wallet runs the public-testnet journey script, funded like one USDC and one EURC claim.
+const journeyKey = generatePrivateKey();
+const journeyWallet = privateKeyToAccount(journeyKey);
+writeFileSync(`${dir}/journey-wallet.json`, JSON.stringify({ address: journeyWallet.address, privateKey: journeyKey }, null, 2) + "\n", {
+  mode: 0o600,
+});
+await send(template.usdc, erc20Abi, "mint", [journeyWallet.address, faucetClaim]);
+await send(template.eurc, erc20Abi, "mint", [journeyWallet.address, faucetClaim]);
+await c.request({ method: "anvil_setBalance", params: [journeyWallet.address, toHex(faucetClaim * 10n ** 12n)] });
+env.ARC_JOURNEY_WALLET = `${dir}/journey-wallet.json`;
+env.ARC_JOURNEY_EVIDENCE = `${dir}/journey.json`;
+const journeyCheck = runScript("scripts/testnet-journey.mjs");
+if (journeyCheck.exitCode !== 0) throw new Error("Journey readiness check failed");
+const journeyRun = runScript("scripts/testnet-journey.mjs", ["--broadcast"]);
+if (journeyRun.exitCode !== 0) throw new Error("Journey failed");
+const journey = JSON.parse(readFileSync(`${dir}/journey.json`));
 // 4. Measurements and evidence.
 const deployed = JSON.parse(readFileSync(manifestPath));
 const intentDir = `${dir}/transactions/${deployed.deploymentId}`;
@@ -118,6 +134,7 @@ for (const file of [
   "scripts/deploy-arc-testnet.mjs",
   "scripts/verify-arc-testnet.mjs",
   "scripts/rehearse-arc-testnet.mjs",
+  "scripts/testnet-journey.mjs",
 ])
   sourceHash[file] = keccak256(toHex(readFileSync(file)));
 const evidence = {
@@ -144,10 +161,20 @@ const evidence = {
   ),
   verification: deployed.verification,
   rerunSentNothing: true,
+  journeyFromSecondWallet: {
+    wallet: `${journey.wallet} (disposable)`,
+    steps: journey.steps,
+    start: journey.start,
+    end: journey.end,
+    entryClaimUsdcUnits: journey.entryClaimUsdcUnits,
+  },
   preflightOutput: preflight.output.split("\n"),
 };
 mkdirSync("docs/evidence", { recursive: true });
 writeFileSync("docs/evidence/arc-rehearsal.json", JSON.stringify(evidence, null, 2) + "\n");
+console.log(
+  `Rehearsal journey: ${journey.steps.length} transactions from a second wallet.`,
+);
 console.log(
   `Rehearsal: ${deployed.transactions.length} transactions, ${gasUsed} gas used, ${gasLimit} gas limit; status ${deployed.status}. Evidence: docs/evidence/arc-rehearsal.json`,
 );

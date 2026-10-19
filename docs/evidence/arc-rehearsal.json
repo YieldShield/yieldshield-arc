@@ -1,8 +1,8 @@
 {
   "network": "Local Anvil with Arc testnet's chain ID 5042002 and 20 gwei base fee; local stand-ins installed at the canonical Arc USDC, EURC, cirBTC, Chronicle feed and SelfKisser addresses. NOT Arc testnet.",
   "chainId": 5042002,
-  "createdAt": "2026-10-19T07:45:17.362Z",
-  "parentCommit": "26c5b1b27a6e19947a96aa778ac6fb3c5730a73c",
+  "createdAt": "2026-10-19T07:48:47.118Z",
+  "parentCommit": "2c594aff268baa09616886317f29cd52dc203889",
   "sourceHash": {
     "contracts/src/ShieldPool.sol": "0xefd2569a6ff811e0a2067b81886ee40e306eca5e0fd429dacbddcf9fcdaa1da1",
     "contracts/src/ShieldFactory.sol": "0x409bbd7ecb900f5612df0b3c16ba2db8ad0b110b40713505369e7746e1e384e9",
@@ -12,9 +12,10 @@
     "scripts/setup-markets.mjs": "0x18a74e9424135da9602ad7b574df1418a58157631971f33a4e696228533bc073",
     "scripts/deploy-arc-testnet.mjs": "0xed5e10629d9fd596e22246918c0506f5a3fc9092bf7c5dc0432bd44100a6334b",
     "scripts/verify-arc-testnet.mjs": "0x66c006ca2444b0ace4bfd687d241a883f65aa5001c2c0eec8e42bb9a437e2dea",
-    "scripts/rehearse-arc-testnet.mjs": "0xb7be3af6d4f13d3243768c57e9dec1f1cd4bd30d082ddf27f2ee91a5a32730ca"
+    "scripts/rehearse-arc-testnet.mjs": "0x733ebd14ea0ab02f108f38168d68ef8c532abb4bda3b30f6077b53cef47ef430",
+    "scripts/testnet-journey.mjs": "0x8aea6cf0888ca5b853552f99b55832ef5c30cfa2c8ea299fb4f36b9e2f8d6d8d"
   },
-  "rehearsalSigner": "0x30eB41089cC973C1E9582297A8159B08856E22a6 (disposable, generated for this run and discarded)",
+  "rehearsalSigner": "0x381F81a2841b05B6fc61A236504cbf92ce357F99 (disposable, generated for this run and discarded)",
   "standIns": [
     {
       "name": "USDC",
@@ -49,59 +50,59 @@
     "emulatedFaucetClaimUsdc": "20",
     "note": "Anvil keeps native and ERC-20 balances separate; both were set to 20 USDC to emulate Arc's single balance.",
     "usdcLeftAfterSeeds": "5000000",
-    "nativeWeiLeftAfterGas": "19896258986060830645"
+    "nativeWeiLeftAfterGas": "19896259067970199305"
   },
-  "deploymentId": "arc-testnet-2026-10-19T07-45-17Z-783446",
+  "deploymentId": "arc-testnet-2026-10-19T07-48-46Z-1ec270",
   "status": "deployed-and-verified",
   "transactions": [
     {
       "label": "scenarioOracle",
-      "hash": "0x7bfe4243a3856565b8ec86508a6710099efa43c130e6525e7edb5efc8c29af36",
+      "hash": "0x5ec1190fabab16e728b88a440982558be26ef94291a0b01b3ac6a55fae354a04",
       "nonce": 0,
       "blockNumber": "5",
-      "contractAddress": "0x660d5b2c579c4fd76332ea3c929ebce3b330f139",
+      "contractAddress": "0x16179b5a3b6392b4f55500125585474f8a60ede0",
       "gasUsed": "140881",
       "gasLimit": "140881"
     },
     {
       "label": "eurcOracle",
-      "hash": "0x5d543822a42a72d8db7eac03cd350571f0c9d83fa1cbf68908013f479b517e5b",
+      "hash": "0x5fac309fa841c05bb51998bff19a567f9180392a6c8f0bb8fddf6466f82daab9",
       "nonce": 1,
       "blockNumber": "6",
-      "contractAddress": "0x4c24a573595c0ec9c421efdd23c2a3e0d35527c4",
+      "contractAddress": "0x6231a6b40cdfb2f09be9f7200687a080c15cc056",
       "gasUsed": "616611",
       "gasLimit": "616611"
     },
     {
       "label": "cirbtcOracle",
-      "hash": "0xa88c9f1da78110281453522ebd578d5f7404ae447b3ae31105a517ae06cc4768",
+      "hash": "0xfdf819b8f75b647965ec8226a40ac72dfd9794302be62488921aeb8d00aaa6e5",
       "nonce": 2,
       "blockNumber": "7",
-      "contractAddress": "0x8d9e4c0069924cd3d0fea46a063c8bf67a3bbff8",
+      "contractAddress": "0xe090eced254d2384414c0032ec474e6d88575f91",
       "gasUsed": "589775",
       "gasLimit": "589775"
     },
     {
       "label": "factory",
-      "hash": "0x14f8489b1540d18930fcb380eef4fc776c8d1738721340755b7f0e8331a09522",
+      "hash": "0xeccb920619ad96306349ba375052f754fc8aa1fc5a885261fccbd044ac1035f9",
       "nonce": 3,
       "blockNumber": "8",
-      "contractAddress": "0xc4a1b4d2cf29a291d402bdd3e55e51d8008780e1",
-      "gasUsed": "3916625",
-      "gasLimit": "3916625"
+      "contractAddress": "0x1b0bc3ee8607acea273b370f646dd447604d3c73",
+      "gasUsed": "3916613",
+      "gasLimit": "3916613"
     },
     {
       "label": "factory-usdc-approve",
-      "hash": "0x4d18d7e98aa9a74f47fae342f0ecd9d1270d0310502dfe6a477aab38700b71e4",
+      "hash": "0x9cafcd490de57a717a888e6b69fda59f9f50f286e773a4526a6a1ec353ef92dd",
       "nonce": 4,
       "blockNumber": "9",
       "contractAddress": null,
-      "gasUsed": "46318",
-      "gasLimit": "46318"
+      "gasUsed": "46330",
+      "gasLimit": "46330"
     },
     {
       "label": "eurcPool-factory-create",
-      "hash": "0x86c6e060ef7fddf114a9c84a6b89bc6af90b852ac39486f4656c29a19f4eaac2",
+      "hash": "0x0ceabaa442db77edd793c6983385cedc760e8657f66407c80f79320b6433c705",
       "nonce": 5,
       "blockNumber": "10",
       "contractAddress": null,
@@ -110,7 +111,7 @@
     },
     {
       "label": "cirbtcPool-factory-create",
-      "hash": "0xdda89f02ae4572a2282b7cbd705f81348015682ab9cf7949cc7c6b285b3cf34a",
+      "hash": "0xfdf436d279ebec8cceac1a8e0616bb794c30e802e4e8625b9a883d0d0309bcb6",
       "nonce": 6,
       "blockNumber": "11",
       "contractAddress": null,
@@ -119,30 +120,30 @@
     },
     {
       "label": "scenarioPool-factory-create",
-      "hash": "0x137eaba08195f587e57ad5221b980f9f670be7f40b8c701e48c3c1f6758a0b98",
+      "hash": "0xf1a7b5d679894c08d8b1df763b47378d1c8004977bf0c58968c141bab4cbe1a7",
       "nonce": 7,
       "blockNumber": "12",
       "contractAddress": null,
-      "gasUsed": "2629560",
-      "gasLimit": "2679068"
+      "gasUsed": "2629548",
+      "gasLimit": "2679056"
     }
   ],
   "totals": {
     "transactions": 8,
-    "gasUsed": "13280706",
-    "gasLimit": "13419630"
+    "gasUsed": "13280694",
+    "gasLimit": "13419618"
   },
   "contracts": {
-    "scenarioOracle": "0x660d5b2c579c4fd76332ea3c929ebce3b330f139",
-    "eurcOracle": "0x4c24a573595c0ec9c421efdd23c2a3e0d35527c4",
-    "cirbtcOracle": "0x8d9e4c0069924cd3d0fea46a063c8bf67a3bbff8",
-    "factory": "0xc4a1b4d2cf29a291d402bdd3e55e51d8008780e1",
-    "eurcPool": "0x03d598472dD97479eE4c3fB87e7D256457b7159b",
-    "cirbtcPool": "0x1b0D0D1447217C6474869C3c693F28aA28F76E70",
-    "scenarioPool": "0x65Cebb60e94ac87B6CA2250e98868ac94F97FD28"
+    "scenarioOracle": "0x16179b5a3b6392b4f55500125585474f8a60ede0",
+    "eurcOracle": "0x6231a6b40cdfb2f09be9f7200687a080c15cc056",
+    "cirbtcOracle": "0xe090eced254d2384414c0032ec474e6d88575f91",
+    "factory": "0x1b0bc3ee8607acea273b370f646dd447604d3c73",
+    "eurcPool": "0x8AB8A1D047DBC13d17c5D7C027C2936D3634Fdb9",
+    "cirbtcPool": "0xE5229e8af9828b2246bb6D0a20fbB2cb9cEc02c8",
+    "scenarioPool": "0x926B0A96fAdf8f82691607Dc50468bAcbb3a3a10"
   },
   "verification": {
-    "checkedAt": "2026-10-19T07:45:17.193Z",
+    "checkedAt": "2026-10-19T07:48:46.673Z",
     "checks": [
       "runtime code of 3 oracles, the factory and 3 pools matches contracts/out (immutables masked)",
       "USDC (6), EURC (6) and cirBTC (8) identities",
@@ -153,10 +154,74 @@
     ]
   },
   "rerunSentNothing": true,
+  "journeyFromSecondWallet": {
+    "wallet": "0x18c769CA7867d846125CD68898Ce7b2a9091710F (disposable)",
+    "steps": [
+      {
+        "label": "journey-usdc-approve",
+        "hash": "0xefb63a9483e7831ad70ce9e9f780350854f401960bf0c7b5a458e015451afca0",
+        "blockNumber": "15",
+        "gasUsed": "46330"
+      },
+      {
+        "label": "journey-provide-usdc",
+        "hash": "0x50fc6bd4425142c94e055a9a10977afcfbd8efc24bbaeec7020567c013a15d67",
+        "blockNumber": "16",
+        "gasUsed": "92461"
+      },
+      {
+        "label": "journey-eurc-approve",
+        "hash": "0xf1ceae8aae5bc8465f12ea8cbd2f4826ce61e02815ddf119b02ab70beed831f4",
+        "blockNumber": "17",
+        "gasUsed": "46330"
+      },
+      {
+        "label": "journey-protect-eurc",
+        "hash": "0x6c5d9a5f65cfef5e842012561689db5c386ffdae73bae0564b46730d1dc0fd74",
+        "blockNumber": "18",
+        "gasUsed": "301974"
+      },
+      {
+        "label": "journey-partial-asset-exit",
+        "hash": "0x74dbc989c410cb222e2f9f167b152a5b19a2e6aa508ee027900d9cf6898b83fd",
+        "blockNumber": "20",
+        "gasUsed": "113511"
+      },
+      {
+        "label": "journey-backing-exit",
+        "hash": "0xbe1a66efa327050e5364221cb16b56737560c7e818464595f65340c6ceac072e",
+        "blockNumber": "21",
+        "gasUsed": "97535"
+      },
+      {
+        "label": "journey-provider-notice",
+        "hash": "0x1df35f930fc35a44a0740290337655caf1aad6b393aa8e680b77f023bc73116f",
+        "blockNumber": "22",
+        "gasUsed": "49364"
+      },
+      {
+        "label": "journey-provider-redeem",
+        "hash": "0xf2259ac460661b01c893c444fadc72116b682a483b0c22105710e11bf8c9d6f1",
+        "blockNumber": "24",
+        "gasUsed": "88564"
+      }
+    ],
+    "start": {
+      "nativeWei": "20000000000000000000",
+      "usdc": "20000000",
+      "eurc": "20000000"
+    },
+    "end": {
+      "nativeWei": "19997360259965252593",
+      "usdc": "20802487",
+      "eurc": "19285714"
+    },
+    "entryClaimUsdcUnits": "2246964"
+  },
   "preflightOutput": [
-    "{\"chainId\":5042002,\"rehearsal\":true,\"deployer\":\"0x30eB41089cC973C1E9582297A8159B08856E22a6\",\"nativeBalanceWei\":\"20000000000000000000\",\"usdcBalance\":\"20000000\",\"requiredNativeWei\":\"15699400000000000000\",\"requiredUsdcForSeeds\":\"15000000\",\"deploymentId\":null,\"recordedTransactions\":0,\"replacementRound\":null,\"commit\":\"26c5b1b27a6e19947a96aa778ac6fb3c5730a73c\",\"uncommitted\":[\"scripts/deploy-fuji.mjs -> scripts/deploy-arc-testnet.mjs\",\"scripts/local-journey.mjs\",\"scripts/local-web.mjs\",\"scripts/setup-markets.mjs\",\"scripts/verify-fuji.mjs -> scripts/verify-arc-testnet.mjs\",\"scripts/arc-config.mjs\",\"scripts/check-chronicle-fork.mjs\",\"scripts/rehearse-arc-testnet.mjs\"],\"staleSources\":0,\"broadcast\":false}",
+    "{\"chainId\":5042002,\"rehearsal\":true,\"deployer\":\"0x381F81a2841b05B6fc61A236504cbf92ce357F99\",\"nativeBalanceWei\":\"20000000000000000000\",\"usdcBalance\":\"20000000\",\"requiredNativeWei\":\"15699400000000000000\",\"requiredUsdcForSeeds\":\"15000000\",\"deploymentId\":null,\"recordedTransactions\":0,\"replacementRound\":null,\"commit\":\"2c594aff268baa09616886317f29cd52dc203889\",\"uncommitted\":[\"scripts/rehearse-arc-testnet.mjs\",\"scripts/testnet-journey.mjs\"],\"staleSources\":0,\"broadcast\":false}",
     "Funding: requires 15.6994 USDC = 13450000 gas x 40 gwei max fee x 1.3 (0.6994 USDC) + 15 USDC of market seeds. Balance: 20 USDC (native view), 20 USDC (ERC-20 view).",
-    "Uncommitted deployment inputs: scripts/deploy-fuji.mjs -> scripts/deploy-arc-testnet.mjs, scripts/local-journey.mjs, scripts/local-web.mjs, scripts/setup-markets.mjs, scripts/verify-fuji.mjs -> scripts/verify-arc-testnet.mjs, scripts/arc-config.mjs, scripts/check-chronicle-fork.mjs, scripts/rehearse-arc-testnet.mjs",
+    "Uncommitted deployment inputs: scripts/rehearse-arc-testnet.mjs, scripts/testnet-journey.mjs",
     "Chronicle EURC/USD 0x4640b2AF58f6Efc32b524C61e59C99d3845aD7C1: 1.123300126579703113, updated 0s ago (maxPriceAge 10800s).",
     "Chronicle USDC/USD 0x7fBe79354160a1C618015aa77c193CdE0FB29099: 0.99983784039, updated 0s ago (maxPriceAge 10800s).",
     "Chronicle CIRBTC/USDC 0xAd1C417C4bc9f037Fc61DC3fbDc999e501155960: 81827.183708578801548325, updated 0s ago (maxPriceAge 10800s).",

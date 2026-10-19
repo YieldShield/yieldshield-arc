@@ -13,6 +13,7 @@
     "abis": "node scripts/export-abis.mjs",
     "deploy:arc-testnet": "node scripts/deploy-arc-testnet.mjs",
     "verify:arc-testnet": "node scripts/verify-arc-testnet.mjs",
+    "journey:arc-testnet": "node scripts/testnet-journey.mjs",
     "rehearse:arc-testnet": "node scripts/rehearse-arc-testnet.mjs",
     "check:chronicle-fork": "node scripts/check-chronicle-fork.mjs",
     "test:browser": "playwright test",

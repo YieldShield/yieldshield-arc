@@ -2,12 +2,12 @@
   "version": 3,
   "network": "Arc Testnet",
   "chainId": 5042002,
-  "status": "prepared",
+  "status": "awaiting-testnet-usdc",
   "rpcUrl": "https://rpc.testnet.arc.io",
   "explorer": "https://explorer.testnet.arc.io",
   "faucet": "https://faucet.circle.com",
   "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
-  "deployer": null,
+  "deployer": "0x10D42586A65a98BCa4baFAa1bF5DCB10c820f50a",
   "usdc": "0x3600000000000000000000000000000000000000",
   "eurc": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
   "cirbtc": "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF",
@@ -31,5 +31,14 @@
   "cirbtcPool": null,
   "scenarioPool": null,
   "defaultTerms": null,
-  "transactions": []
+  "transactions": [],
+  "funding": {
+    "faucet": "https://faucet.circle.com",
+    "network": "Arc Testnet",
+    "deployer": "0x10D42586A65a98BCa4baFAa1bF5DCB10c820f50a",
+    "deployerNeeds": "20 USDC (one faucet claim): 15 USDC for the three 5 USDC market seeds plus about 0.7 USDC of gas with headroom",
+    "journeyWallet": "0x424cb86EEd3Bf1101C0f2b6f74Db2C291284456d",
+    "journeyWalletNeeds": "20 USDC and 20 EURC (one faucet claim each)",
+    "note": "Both are new dedicated test wallets created on 19 October 2026; their keys are only in the ignored .secrets/ directory. The faucet uses reCAPTCHA, so it was not used by automation."
+  }
 }
