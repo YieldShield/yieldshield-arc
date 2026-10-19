@@ -2,7 +2,7 @@
   "version": 3,
   "network": "Arc Testnet",
   "chainId": 5042002,
-  "status": "awaiting-pyth-api-key",
+  "status": "awaiting-testnet-usdc",
   "rpcUrl": "https://rpc.testnet.arc.io",
   "explorer": "https://explorer.testnet.arc.io",
   "faucet": "https://faucet.circle.com",
@@ -11,7 +11,7 @@
   "usdc": "0x3600000000000000000000000000000000000000",
   "eurc": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
   "cirbtc": "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF",
-  "oracle": "pyth",
+  "oracle": "chronicle",
   "pyth": {
     "contract": "0x2880aB155794e7179c9eE2e38200202908C17B43",
     "hermes": "https://pyth.dourolabs.app/hermes",
@@ -49,10 +49,10 @@
     "network": "Arc Testnet",
     "deployer": "0x10D42586A65a98BCa4baFAa1bF5DCB10c820f50a",
     "deployerFunded": "20 USDC, checked on chain 19 October 2026 13:10 UTC (funded by David from the faucet)",
-    "deployerNeeds": "about 15.96 USDC: 15 USDC for three 5 USDC market seeds plus about 0.96 USDC of gas with headroom, and a few wei of Pyth update fees",
+    "deployerNeeds": "about 15.96 USDC: 15 USDC for three 5 USDC market seeds plus about 0.96 USDC of gas with headroom",
     "journeyWallet": "0x424cb86EEd3Bf1101C0f2b6f74Db2C291284456d",
     "journeyWalletFunded": "20 USDC and 20 EURC, checked on chain 19 October 2026 13:10 UTC",
-    "blocker": "Pyth's Hermes service has required an API key since 26 August 2026. Put it in the ignored .secrets/pyth-api-key (Pyth Terminal, https://pythdata.app/signup); the preflight then simulates an update on chain before anything is sent.",
+    "blocker": "None at 13:35 UTC on 19 October 2026: the Chronicle feeds resumed at 13:20-13:25 UTC after a 28-hour outage. Pyth stays implemented but needs a Hermes API key (owner sign-up) and Arc testnet's Pyth contract was left out of Pyth's August upgrade.",
     "note": "Both wallets are dedicated test wallets created on 19 October 2026; their keys are only in the ignored .secrets/ directory."
   }
 }
