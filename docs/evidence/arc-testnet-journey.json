@@ -1,0 +1,80 @@
+{
+  "network": "Arc testnet (chain 5042002)",
+  "recordedAt": "2026-10-19T13:37:25.276Z",
+  "commit": "3fc3b361c24eb807f10e037602092136848bf46e",
+  "deploymentId": "arc-testnet-2026-10-19T13-33-11Z-5929f2",
+  "oracle": "chronicle",
+  "wallet": "0x424cb86EEd3Bf1101C0f2b6f74Db2C291284456d",
+  "market": "0x583EcBBf94C2B978A9f02d32BF629846e9b0626C",
+  "positionId": "1",
+  "entryClaimUsdcUnits": "2244912",
+  "start": {
+    "nativeWei": "20000000000000000000",
+    "usdc": "20000000",
+    "eurc": "20000000"
+  },
+  "end": {
+    "nativeWei": "20779056725000000000",
+    "usdc": "20779056",
+    "eurc": "19285714"
+  },
+  "steps": [
+    {
+      "label": "journey-usdc-approve",
+      "hash": "0x3499b92d45d2b6b150f4d282ab12b9da29d71588e6992c33ea5f2f8d84cb6258",
+      "blockNumber": "68018228",
+      "gasUsed": "55438",
+      "gasLimit": "73113"
+    },
+    {
+      "label": "journey-provide-usdc",
+      "hash": "0xc3ea614d750f9057188f7750232c0a13742e0685cb58f776a81516f8cd9556b9",
+      "blockNumber": "68018236",
+      "gasUsed": "106600",
+      "gasLimit": "151944"
+    },
+    {
+      "label": "journey-eurc-approve",
+      "hash": "0x3807cb2453216852c8e2bc913ee0723042512d815d442d4e5eb56894adcd9da4",
+      "blockNumber": "68018244",
+      "gasUsed": "55437",
+      "gasLimit": "73112"
+    },
+    {
+      "label": "journey-protect-eurc",
+      "hash": "0xe19c61c2a48ca837903c4a5c32f600ad2967c8c91f0289cfa68b7db476abb89e",
+      "blockNumber": "68018253",
+      "gasUsed": "306327",
+      "gasLimit": "412770"
+    },
+    {
+      "label": "journey-partial-asset-exit",
+      "hash": "0x4f0d6f0aa652601dd71fe24de30398bc13508f7269d0287203e7c53fbf8999de",
+      "blockNumber": "68018391",
+      "gasUsed": "116493",
+      "gasLimit": "158294"
+    },
+    {
+      "label": "journey-backing-exit",
+      "hash": "0xcacf9c5429beb68be6d0d5aa2bb89e84d91f696252d9929fa012befc80df363f",
+      "blockNumber": "68018399",
+      "gasUsed": "107113",
+      "gasLimit": "177318"
+    },
+    {
+      "label": "journey-provider-notice",
+      "hash": "0x9dce19e2302634aacfce05d3c4ed5799b663c944ac2d35783f702138398fd2f3",
+      "blockNumber": "68018408",
+      "gasUsed": "49364",
+      "gasLimit": "64678"
+    },
+    {
+      "label": "journey-provider-redeem",
+      "hash": "0x5c5874c391b31cbd606fc65509f657105d7cc6657e774fdcc2d73705b68695d8",
+      "blockNumber": "68018664",
+      "gasUsed": "111119",
+      "gasLimit": "163446"
+    }
+  ],
+  "note": "Test tokens from Circle's faucet; no monetary value. A scripted wallet, not a user."
+}
