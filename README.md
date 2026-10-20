@@ -48,7 +48,7 @@ A Pyth pull-oracle path is fully implemented and tested as an alternative (`"ora
 - Pyth's Hermes service has required an API key since 26 August 2026.
 - Arc testnet's Pyth contract was left out of Pyth's August upgrade, and its last successful update was on 22 September.
 
-**Tests:** 72 Solidity tests (6 fuzz), 21 JavaScript tests and 12 browser tests pass. Further evidence:
+**Tests (20 October 2026):** 72 Solidity tests (6 fuzz), 31 JavaScript tests and 12 browser tests pass. See the [latest verification report](docs/E2E_REPORT_2026-10-20.md). Further evidence:
 
 - a full rehearsal on an Anvil with chain ID 5042002 ([evidence](docs/evidence/arc-rehearsal.json));
 - a local journey ([evidence](docs/evidence/local-journey.json));
