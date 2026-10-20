@@ -1,63 +1,119 @@
 {
   "presentationId": "1eq5wCaF0WdbLTRk8_ZTXjNXcX1A6Z0pzSqBLpis_ReQ",
-  "revision": "fPAXd9XTmXcSNA",
+  "revision": "_F004wCYoKU_sA",
   "slides": [
     {
-      "id": "p1",
+      "id": "arc_title_20261020",
       "elements": [
         {
-          "id": "p1_i12",
+          "id": "arc26_cover_art",
+          "type": "image",
+          "title": "Protection concept"
+        },
+        {
+          "id": "arc26_arc_title_20261020_t_1",
           "type": "shape",
-          "text": "YIELDSHIELD ARC"
+          "text": "YieldShield"
         },
         {
-          "id": "p1_i2",
-          "type": "shape"
+          "id": "arc26_arc_title_20261020_t_2",
+          "type": "shape",
+          "text": "Arc"
         },
         {
-          "id": "p1_i3",
+          "id": "arc26_arc_title_20261020_t_3",
           "type": "shape",
           "text": "USDC-backed protection\nfor EURC and cirBTC"
         },
         {
-          "id": "p1_i4",
+          "id": "arc26_arc_title_20261020_t_4",
           "type": "shape",
-          "text": "Built on Arc testnet"
+          "text": "Circle Developer Grant\n20 October 2026"
+        }
+      ]
+    },
+    {
+      "id": "p1",
+      "elements": [
+        {
+          "id": "arc26_p1_t_5",
+          "type": "shape",
+          "text": "YieldShield Arc"
         },
         {
-          "id": "p1_i5",
+          "id": "arc26_p1_t_6",
           "type": "shape",
-          "text": "A fixed USDC claim, funded reserves and a choice of exits."
+          "text": "A fixed exit value in USDC"
         },
         {
-          "id": "p1_i6",
+          "id": "arc26_p1_t_7",
           "type": "shape",
-          "text": "Circle USDC powers the claim, reserve and gas"
+          "text": "02"
         },
         {
-          "id": "p1_i7",
+          "id": "arc26_p1_t_8",
           "type": "shape",
-          "text": "arc.yieldshield.ai"
+          "text": "Holders keep exposure to EUR or BTC.\nThey choose when to return to USDC."
         },
         {
-          "id": "p1_i8",
-          "type": "shape",
-          "text": "$16,000"
+          "id": "arc26_p1_node_9",
+          "type": "shape"
         },
         {
-          "id": "p1_i9",
+          "id": "arc26_p1_t_10",
           "type": "shape",
-          "text": "Grant request\n\n$11,000 core work\n$5,000 conditional\nmainnet release"
+          "text": "EURC or cirBTC"
         },
         {
-          "id": "p1_i10",
-          "type": "shape",
-          "text": "Circle Developer Grant / 20 October 2026"
+          "id": "arc26_p1_line_11",
+          "type": "line"
         },
         {
-          "id": "p1_i11",
+          "id": "arc26_p1_line_12",
+          "type": "line"
+        },
+        {
+          "id": "arc26_p1_line_13",
+          "type": "line"
+        },
+        {
+          "id": "arc26_p1_line_14",
+          "type": "line"
+        },
+        {
+          "id": "arc26_p1_t_15",
           "type": "shape",
-          "text": "01"
+          "text": "Asset exposure"
+        },
+        {
+          "id": "arc26_p1_t_16",
+          "type": "shape",
+          "text": "Fixed USDC claim"
+        },
+        {
+          "id": "arc26_p1_t_17",
+          "type": "shape",
+          "text": "Keep upside"
+        },
+        {
+          "id": "arc26_p1_t_18",
+          "type": "shape",
+          "text": "Choose a funded exit"
+        },
+        {
+          "id": "arc26_p1_t_19",
+          "type": "shape",
+          "text": "Initial audience"
+        },
+        {
+          "id": "arc26_p1_t_20",
+          "type": "shape",
+          "text": "Arc treasury, lending,\nwallet and agent builders"
+        },
+        {
+          "id": "arc26_p1_t_21",
+          "type": "shape",
+          "text": "Arc testnet. Unaudited. Test tokens have no monetary value."
         }
       ]
     },
@@ -65,58 +121,108 @@
       "id": "p2",
       "elements": [
         {
-          "id": "p2_i12",
+          "id": "arc26_p2_t_22",
           "type": "shape",
-          "text": "YIELDSHIELD ARC"
+          "text": "YieldShield Arc"
         },
         {
-          "id": "p2_i2",
+          "id": "arc26_p2_t_23",
+          "type": "shape",
+          "text": "The reserve model"
+        },
+        {
+          "id": "arc26_p2_t_24",
+          "type": "shape",
+          "text": "03"
+        },
+        {
+          "id": "arc26_p2_node_25",
           "type": "shape"
         },
         {
-          "id": "p2_i3",
+          "id": "arc26_p2_t_26",
           "type": "shape",
-          "text": "A choice for holders, a risk for providers"
+          "text": "Asset holder"
         },
         {
-          "id": "p2_i4",
-          "type": "shape",
-          "text": "Asset holders"
+          "id": "arc26_p2_node_27",
+          "type": "shape"
         },
         {
-          "id": "p2_i5",
+          "id": "arc26_p2_t_28",
           "type": "shape",
-          "text": "Keep EUR or BTC exposure while setting a fixed exit value in USDC.\n\nConventional hedges can need active pricing and specialist execution."
+          "text": "YieldShield pool"
         },
         {
-          "id": "p2_i6",
-          "type": "shape",
-          "text": "Capital providers"
+          "id": "arc26_p2_node_29",
+          "type": "shape"
         },
         {
-          "id": "p2_i7",
+          "id": "arc26_p2_t_30",
           "type": "shape",
-          "text": "Commit USDC reserves to earn fees on realized gains.\n\nReceive the surrendered asset and bear its downside risk."
+          "text": "Capital provider"
         },
         {
-          "id": "p2_i8",
-          "type": "shape",
-          "text": "First audience"
+          "id": "arc26_p2_line_31",
+          "type": "line"
         },
         {
-          "id": "p2_i9",
-          "type": "shape",
-          "text": "Arc treasury, lending, wallet and agent builders in a controlled testnet pilot."
+          "id": "arc26_p2_line_32",
+          "type": "line"
         },
         {
-          "id": "p2_i10",
+          "id": "arc26_p2_t_33",
           "type": "shape",
-          "text": "Arc testnet. Unaudited. Test tokens have no monetary value."
+          "text": "EURC / cirBTC"
         },
         {
-          "id": "p2_i11",
+          "id": "arc26_p2_t_34",
           "type": "shape",
-          "text": "02"
+          "text": "USDC"
+        },
+        {
+          "id": "arc26_p2_t_35",
+          "type": "shape",
+          "text": "Fixed claim"
+        },
+        {
+          "id": "arc26_p2_t_36",
+          "type": "shape",
+          "text": "Value set at entry\nby the oracle"
+        },
+        {
+          "id": "arc26_p2_t_37",
+          "type": "shape",
+          "text": "150%"
+        },
+        {
+          "id": "arc26_p2_t_38",
+          "type": "shape",
+          "text": "USDC reserved per claim"
+        },
+        {
+          "id": "arc26_p2_t_39",
+          "type": "shape",
+          "text": "Risk + reward"
+        },
+        {
+          "id": "arc26_p2_t_40",
+          "type": "shape",
+          "text": "Earn gain fees\nReceive surrendered assets\nBear their downside"
+        },
+        {
+          "id": "arc26_p2_line_41",
+          "type": "line"
+        },
+        {
+          "id": "arc26_p2_t_42",
+          "type": "shape",
+          "text": "Illustration: a 100 USDC claim requires 150 USDC of backing at entry."
+        },
+        {
+          "id": "arc26_p2_t_43",
+          "type": "shape",
+          "text": "Reserve requirement does not replace an independent audit."
         }
       ]
     },
@@ -124,63 +230,79 @@
       "id": "p3",
       "elements": [
         {
-          "id": "p3_i12",
+          "id": "arc26_p3_t_44",
           "type": "shape",
-          "text": "YIELDSHIELD ARC"
+          "text": "YieldShield Arc"
         },
         {
-          "id": "p3_i2",
+          "id": "arc26_p3_t_45",
+          "type": "shape",
+          "text": "Two exits before maturity"
+        },
+        {
+          "id": "arc26_p3_t_46",
+          "type": "shape",
+          "text": "04"
+        },
+        {
+          "id": "arc26_p3_node_47",
           "type": "shape"
         },
         {
-          "id": "p3_i3",
+          "id": "arc26_p3_t_48",
           "type": "shape",
-          "text": "The protection lifecycle"
+          "text": "Protected position"
         },
         {
-          "id": "p3_i4",
-          "type": "shape",
-          "text": "At entry"
+          "id": "arc26_p3_line_49",
+          "type": "line"
         },
         {
-          "id": "p3_i5",
-          "type": "shape",
-          "text": "The oracle fixes the USDC claim. Providers reserve 150% of that amount."
+          "id": "arc26_p3_line_50",
+          "type": "line"
         },
         {
-          "id": "p3_i6",
+          "id": "arc26_p3_line_51",
+          "type": "line"
+        },
+        {
+          "id": "arc26_p3_line_52",
+          "type": "line"
+        },
+        {
+          "id": "arc26_p3_t_53",
           "type": "shape",
           "text": "Keep the asset"
         },
         {
-          "id": "p3_i7",
-          "type": "shape",
-          "text": "Pay 12% of realized gain only.\n10% goes to providers, 1% to the creator and 1% to the protocol."
-        },
-        {
-          "id": "p3_i8",
+          "id": "arc26_p3_t_54",
           "type": "shape",
           "text": "Take the USDC claim"
         },
         {
-          "id": "p3_i9",
+          "id": "arc26_p3_t_55",
           "type": "shape",
-          "text": "Surrender the asset for the fixed claim.\nProviders receive the asset and bear its loss."
+          "text": "Pay 12% of realized gain only"
         },
         {
-          "id": "p3_i10",
+          "id": "arc26_p3_t_56",
           "type": "shape",
-          "text": "Arc testnet. Unaudited. Test tokens have no monetary value."
+          "text": "Surrender the asset for the fixed claim"
         },
         {
-          "id": "p3_i11",
+          "id": "arc26_p3_t_57",
           "type": "shape",
-          "text": "03"
+          "text": "10% provider   1% creator   1% protocol"
         },
         {
-          "id": "arc_maturity_note",
+          "id": "arc26_p3_t_58",
           "type": "shape",
-          "text": "At maturity, anyone may settle. Remaining assets go to providers and holders claim USDC."
+          "text": "No price read needed for this exit"
+        },
+        {
+          "id": "arc26_p3_t_59",
+          "type": "shape",
+          "text": "At maturity: anyone can settle; holders claim USDC and providers receive remaining assets."
         }
       ]
     },
@@ -188,58 +310,129 @@
       "id": "p4",
       "elements": [
         {
-          "id": "p4_i12",
+          "id": "arc26_p4_t_60",
           "type": "shape",
-          "text": "YIELDSHIELD ARC"
+          "text": "YieldShield Arc"
         },
         {
-          "id": "p4_i2",
+          "id": "arc26_p4_t_61",
+          "type": "shape",
+          "text": "Built on Circle assets and Arc"
+        },
+        {
+          "id": "arc26_p4_t_62",
+          "type": "shape",
+          "text": "05"
+        },
+        {
+          "id": "arc26_p4_t_63",
+          "type": "shape",
+          "text": "WORKING TODAY"
+        },
+        {
+          "id": "arc26_p4_node_64",
           "type": "shape"
         },
         {
-          "id": "p4_i3",
+          "id": "arc26_p4_t_65",
           "type": "shape",
-          "text": "Circle integrations"
+          "text": "Arc testnet"
         },
         {
-          "id": "p4_i4",
+          "id": "arc26_p4_node_66",
+          "type": "shape"
+        },
+        {
+          "id": "arc26_p4_t_67",
+          "type": "shape",
+          "text": "EURC"
+        },
+        {
+          "id": "arc26_p4_node_68",
+          "type": "shape"
+        },
+        {
+          "id": "arc26_p4_t_69",
+          "type": "shape",
+          "text": "cirBTC"
+        },
+        {
+          "id": "arc26_p4_node_70",
+          "type": "shape"
+        },
+        {
+          "id": "arc26_p4_t_71",
           "type": "shape",
           "text": "USDC"
         },
         {
-          "id": "p4_i5",
+          "id": "arc26_p4_t_72",
           "type": "shape",
-          "text": "Reserves and claims\n6-decimal ERC-20 accounting\nGas on Arc"
+          "text": "Protected assets"
         },
         {
-          "id": "p4_i6",
+          "id": "arc26_p4_t_73",
           "type": "shape",
-          "text": "EURC + cirBTC"
+          "text": "Reserve + gas"
         },
         {
-          "id": "p4_i7",
-          "type": "shape",
-          "text": "Canonical Circle testnet assets\nEURC has 6 decimals. cirBTC has 8.\nChronicle prices EURC/USD against USDC/USD and CIRBTC/USDC."
+          "id": "arc26_p4_line_74",
+          "type": "line"
         },
         {
-          "id": "p4_i8",
+          "id": "arc26_p4_t_75",
           "type": "shape",
-          "text": "Grant work"
+          "text": "Chronicle price references"
         },
         {
-          "id": "p4_i9",
+          "id": "arc26_p4_t_76",
           "type": "shape",
-          "text": "App Kit Bridge exits to Ethereum Sepolia and Base Sepolia for both USDC and EURC. MCP tools prepare unsigned transactions."
+          "text": "PROPOSED GRANT WORK"
         },
         {
-          "id": "p4_i10",
-          "type": "shape",
-          "text": "Arc testnet. Unaudited. Test tokens have no monetary value."
+          "id": "arc26_p4_node_77",
+          "type": "shape"
         },
         {
-          "id": "p4_i11",
+          "id": "arc26_p4_t_78",
           "type": "shape",
-          "text": "04"
+          "text": "App Kit Bridge"
+        },
+        {
+          "id": "arc26_p4_line_79",
+          "type": "line"
+        },
+        {
+          "id": "arc26_p4_line_80",
+          "type": "line"
+        },
+        {
+          "id": "arc26_p4_line_81",
+          "type": "line"
+        },
+        {
+          "id": "arc26_p4_line_82",
+          "type": "line"
+        },
+        {
+          "id": "arc26_p4_t_83",
+          "type": "shape",
+          "text": "Ethereum\nSepolia"
+        },
+        {
+          "id": "arc26_p4_t_84",
+          "type": "shape",
+          "text": "Base\nSepolia"
+        },
+        {
+          "id": "arc26_p4_t_85",
+          "type": "shape",
+          "text": "USDC + EURC to both destinations"
+        },
+        {
+          "id": "arc26_p4_t_86",
+          "type": "shape",
+          "text": "Planned bridges run separately after an exit or claim. Pools remain on a single chain."
         }
       ]
     },
@@ -247,58 +440,54 @@
       "id": "p5",
       "elements": [
         {
-          "id": "p5_i12",
+          "id": "arc26_p5_t_87",
           "type": "shape",
-          "text": "YIELDSHIELD ARC"
+          "text": "YieldShield Arc"
         },
         {
-          "id": "p5_i2",
-          "type": "shape"
+          "id": "arc26_p5_t_88",
+          "type": "shape",
+          "text": "The deployed testnet product"
         },
         {
-          "id": "p5_i3",
+          "id": "arc26_p5_t_89",
           "type": "shape",
-          "text": "A working testnet foundation"
+          "text": "06"
         },
         {
-          "id": "p5_i4",
+          "id": "arc26_p5_t_90",
           "type": "shape",
-          "text": "3 markets"
+          "text": "3"
         },
         {
-          "id": "p5_i5",
+          "id": "arc26_p5_t_91",
           "type": "shape",
-          "text": "EURC, cirBTC and a clearly labeled scenario market"
+          "text": "working markets"
         },
         {
-          "id": "p5_i6",
+          "id": "arc26_p5_t_92",
           "type": "shape",
-          "text": "8 deployment txs"
+          "text": "72"
         },
         {
-          "id": "p5_i7",
+          "id": "arc26_p5_t_93",
           "type": "shape",
-          "text": "Runtime code checked against our build, plus asset identities, wiring, terms, seeds and receipts.\n\nA separate scripted-wallet journey exercised provision, protection, both exits and redemption."
+          "text": "contract tests passed"
         },
         {
-          "id": "p5_i8",
+          "id": "arc26_p5_t_94",
           "type": "shape",
-          "text": "Current limits"
+          "text": "arc.yieldshield.ai"
         },
         {
-          "id": "p5_i9",
+          "id": "arc26_p5_t_95",
           "type": "shape",
-          "text": "Testnet only. No users or revenue. No browser-wallet signing claimed. Deployment checks and 72 Foundry tests are not an audit."
+          "text": "Project-controlled test wallets. No external users or revenue. Tests are not an audit."
         },
         {
-          "id": "p5_i10",
-          "type": "shape",
-          "text": "Arc testnet. Unaudited. Test tokens have no monetary value."
-        },
-        {
-          "id": "p5_i11",
-          "type": "shape",
-          "text": "05"
+          "id": "arc26_live_markets",
+          "type": "image",
+          "title": "Live Arc markets"
         }
       ]
     },
@@ -306,123 +495,97 @@
       "id": "p6",
       "elements": [
         {
-          "id": "p6_i12",
+          "id": "arc26_p6_t_96",
           "type": "shape",
-          "text": "YIELDSHIELD ARC"
+          "text": "YieldShield Arc"
         },
         {
-          "id": "p6_i2",
-          "type": "shape"
+          "id": "arc26_p6_t_97",
+          "type": "shape",
+          "text": "A pilot with measurable outcomes"
         },
         {
-          "id": "p6_i3",
+          "id": "arc26_p6_t_98",
           "type": "shape",
-          "text": "A measurable testnet pilot"
+          "text": "07"
         },
         {
-          "id": "p6_i4",
+          "id": "arc26_p6_t_99",
           "type": "shape",
-          "text": "Recruit"
+          "text": "20"
         },
         {
-          "id": "p6_i5",
+          "id": "arc26_p6_t_100",
           "type": "shape",
-          "text": "Invite 20 treasury, lending and agent builders through developer communities and our network.\nConduct five interviews."
+          "text": "10"
         },
         {
-          "id": "p6_i6",
+          "id": "arc26_p6_t_101",
           "type": "shape",
-          "text": "10 testers"
+          "text": "30"
         },
         {
-          "id": "p6_i7",
+          "id": "arc26_p6_t_102",
           "type": "shape",
-          "text": "Own wallets and faucet tokens.\n30 completed journeys covering both exits, provider claims and maturity settlement."
+          "text": "invitations"
         },
         {
-          "id": "p6_i8",
+          "id": "arc26_p6_t_103",
           "type": "shape",
-          "text": "Measure"
+          "text": "external testers"
         },
         {
-          "id": "p6_i9",
+          "id": "arc26_p6_t_104",
           "type": "shape",
-          "text": "8 of 10 complete a core flow without live help.\nSeek two follow-on integration expressions of interest."
+          "text": "complete journeys"
         },
         {
-          "id": "p6_i10",
-          "type": "shape",
-          "text": "Arc testnet. Unaudited. Test tokens have no monetary value."
+          "id": "arc26_p6_line_105",
+          "type": "line"
         },
         {
-          "id": "p6_i11",
-          "type": "shape",
-          "text": "06"
+          "id": "arc26_p6_line_106",
+          "type": "line"
         },
         {
-          "id": "arc_pilot_note",
+          "id": "arc26_p6_t_107",
           "type": "shape",
-          "text": "Future targets. No users or commitments yet. Publish results and fixes. Protocol revenue model: 1% of realized gain."
+          "text": "Five discovery interviews"
+        },
+        {
+          "id": "arc26_p6_t_108",
+          "type": "shape",
+          "text": "At least three teams"
+        },
+        {
+          "id": "arc26_p6_t_109",
+          "type": "shape",
+          "text": "Both exits, maturity\nand provider claims"
+        },
+        {
+          "id": "arc26_p6_line_110",
+          "type": "line"
+        },
+        {
+          "id": "arc26_p6_t_111",
+          "type": "shape",
+          "text": "8 / 10"
+        },
+        {
+          "id": "arc26_p6_t_112",
+          "type": "shape",
+          "text": "Target: complete a core flow without live help.\nPublish failures and fixes, then seek follow-on integrations."
+        },
+        {
+          "id": "arc26_p6_t_113",
+          "type": "shape",
+          "text": "Future targets. No tester or partnership commitments claimed."
         }
       ]
     },
     {
       "id": "p7",
       "elements": [
-        {
-          "id": "p7_i12",
-          "type": "shape",
-          "text": "YIELDSHIELD ARC"
-        },
-        {
-          "id": "p7_i2",
-          "type": "shape"
-        },
-        {
-          "id": "p7_i3",
-          "type": "shape",
-          "text": "The founders"
-        },
-        {
-          "id": "p7_i4",
-          "type": "shape",
-          "text": "David Hawig"
-        },
-        {
-          "id": "p7_i5",
-          "type": "shape",
-          "text": "Founder and Managing Director\nFormer ecosystem director at Web3 Foundation\nFounded and exited two startups\nFull-time on YieldShield"
-        },
-        {
-          "id": "p7_i6",
-          "type": "shape",
-          "text": "Santiago Balaguer"
-        },
-        {
-          "id": "p7_i7",
-          "type": "shape",
-          "text": "Cofounder and Product Lead\n15 years in product\n5 years in crypto\nBased in Berlin"
-        },
-        {
-          "id": "p7_i8",
-          "type": "shape",
-          "text": "Hawig Ventures UG (haftungsbeschr\u00e4nkt), Germany"
-        },
-        {
-          "id": "p7_i9",
-          "type": "shape",
-          "text": "Self-funded. No grants or investment received. Founders own the work and review AI-assisted development."
-        },
-        {
-          "id": "p7_i10",
-          "type": "shape",
-          "text": "Arc testnet. Unaudited. Test tokens have no monetary value."
-        },
-        {
-          "id": "p7_i11",
-          "type": "shape",
-          "text": "07"
-        },
         {
           "id": "arc_david_portrait",
           "type": "image",
@@ -432,41 +595,62 @@
           "id": "arc_santiago_portrait",
           "type": "image",
           "title": "Santiago Balaguer"
+        },
+        {
+          "id": "arc26_p7_t_114",
+          "type": "shape",
+          "text": "YieldShield Arc"
+        },
+        {
+          "id": "arc26_p7_t_115",
+          "type": "shape",
+          "text": "The founders"
+        },
+        {
+          "id": "arc26_p7_t_116",
+          "type": "shape",
+          "text": "08"
+        },
+        {
+          "id": "arc26_p7_t_117",
+          "type": "shape",
+          "text": "David Hawig"
+        },
+        {
+          "id": "arc26_p7_t_118",
+          "type": "shape",
+          "text": "Founder\nManaging Director"
+        },
+        {
+          "id": "arc26_p7_t_119",
+          "type": "shape",
+          "text": "Santiago\nBalaguer"
+        },
+        {
+          "id": "arc26_p7_t_120",
+          "type": "shape",
+          "text": "Cofounder\nProduct Lead"
+        },
+        {
+          "id": "arc26_p7_t_121",
+          "type": "shape",
+          "text": "Former Web3 Foundation ecosystem director\nFounded and exited two startups"
+        },
+        {
+          "id": "arc26_p7_t_122",
+          "type": "shape",
+          "text": "15 years in product\n5 years in crypto"
+        },
+        {
+          "id": "arc26_p7_t_123",
+          "type": "shape",
+          "text": "Hawig Ventures UG, Germany. Self-funded. No grants or investment received."
         }
       ]
     },
     {
       "id": "p8",
       "elements": [
-        {
-          "id": "p8_i8",
-          "type": "shape",
-          "text": "YIELDSHIELD ARC"
-        },
-        {
-          "id": "p8_i2",
-          "type": "shape"
-        },
-        {
-          "id": "p8_i3",
-          "type": "shape",
-          "text": "$16,000 across four milestones"
-        },
-        {
-          "id": "p8_i5",
-          "type": "shape",
-          "text": "$11,000 core work. The $5,000 mainnet milestone needs a separately funded audit and legal review. Existing work is not billed."
-        },
-        {
-          "id": "p8_i6",
-          "type": "shape",
-          "text": "Arc testnet. Unaudited. Test tokens have no monetary value."
-        },
-        {
-          "id": "p8_i7",
-          "type": "shape",
-          "text": "08"
-        },
         {
           "id": "arc_milestone_table",
           "type": "table",
@@ -478,30 +662,60 @@
               "Budget"
             ],
             [
-              "CCTP + App Kit exits",
-              "4 routes, receipts + recovery\nWeek 3",
+              "Bridge exits",
+              "4 transfers + recovery / week 3",
               "35",
               "$3,500"
             ],
             [
-              "MCP + agent identity",
-              "Unsigned tools + wallet session\nWeek 6",
+              "Agent integration",
+              "Unsigned tools / week 6",
               "45",
               "$4,500"
             ],
             [
               "Pilot + hardening",
-              "10 testers, 30 journeys\nWeek 9",
+              "10 testers, 30 journeys / week 9",
               "30",
               "$3,000"
             ],
             [
-              "Capped mainnet release",
+              "Capped mainnet",
               "After audit + legal review",
               "50",
               "$5,000"
             ]
           ]
+        },
+        {
+          "id": "arc26_p8_t_124",
+          "type": "shape",
+          "text": "YieldShield Arc"
+        },
+        {
+          "id": "arc26_p8_t_125",
+          "type": "shape",
+          "text": "$16,000 across four milestones"
+        },
+        {
+          "id": "arc26_p8_t_126",
+          "type": "shape",
+          "text": "09"
+        },
+        {
+          "id": "arc26_p8_t_127",
+          "type": "shape",
+          "text": "$11,000 core work"
+        },
+        {
+          "id": "arc26_p8_t_128",
+          "type": "shape",
+          "text": "$5,000 conditional mainnet"
+        },
+        {
+          "id": "arc26_p8_t_129",
+          "type": "shape",
+          "text": "Mainnet requires a separately funded independent audit and legal review. Existing work is not billed."
         }
       ]
     }
