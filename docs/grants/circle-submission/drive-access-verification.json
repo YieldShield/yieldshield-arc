@@ -1,0 +1,127 @@
+{
+  "checkedAt": "2026-10-20T17:31:23.144271+02:00",
+  "authentication": "None: fresh urllib opener per request, no cookies, credentials or auth headers",
+  "folderFileCount": 10,
+  "checks": [
+    {
+      "label": "folder",
+      "id": "1odTT33caL8tVZl46jTVvN64MMRRClA_q",
+      "http": 200,
+      "mime": "text/html",
+      "bytes": 406513,
+      "titleVisible": true,
+      "accessDeniedPage": false,
+      "namedFilesVisible": [
+        "YieldShield-Arc-Circle-demo.mp4",
+        "transcript.md",
+        "YieldShield-Arc-grant-deck.pdf",
+        "YieldShield Arc \u2014 Circle grant deck \u2014 20 October 2026",
+        "usdc-01-backing-erc20-interface.png",
+        "usdc-03-exit-backing.png",
+        "eurc-01-factory-allowed-pairs.png",
+        "eurc-02-chronicle-price.png",
+        "cirbtc-01-asset-unit.png",
+        "cirbtc-02-chronicle-cirbtc-usdc.png"
+      ]
+    },
+    {
+      "label": "video",
+      "id": "1aFfIWxz5a6jiGJfXR2vTM8rvgkWU59pj",
+      "http": 200,
+      "mime": "video/mp4",
+      "bytes": 11853770,
+      "expectedBytes": 11853770,
+      "matchesExpectedSize": true,
+      "sha256": "a978fb19ca9c212d5944d911cd26459fa3eff561a7cc18d3a748e5c1a504f7b3"
+    },
+    {
+      "label": "transcript",
+      "id": "1tdUpJnxMRgDl5Da1pnIls1CtKOI0IUsy",
+      "http": 200,
+      "mime": "application/octet-stream",
+      "bytes": 13548,
+      "expectedBytes": 13548,
+      "matchesExpectedSize": true,
+      "sha256": "acf9de447a609ea39bae1f9003b750f20663531b10f3ac88e63c045c37a5d814"
+    },
+    {
+      "label": "PDF deck",
+      "id": "1p2Z-BrsxhwNZD4KwvxFsHj5FE8tdvA22",
+      "http": 200,
+      "mime": "application/octet-stream",
+      "bytes": 278949,
+      "expectedBytes": 278949,
+      "matchesExpectedSize": true,
+      "sha256": "6b302d367fb2f0f723b03f30dcbcf74dea4a3139ecd41688735983a7ef4d8af0"
+    },
+    {
+      "label": "native deck",
+      "id": "1eq5wCaF0WdbLTRk8_ZTXjNXcX1A6Z0pzSqBLpis_ReQ",
+      "http": 200,
+      "mime": "text/html",
+      "bytes": 333103,
+      "titleVisible": true,
+      "accessDeniedPage": false
+    },
+    {
+      "label": "USDC 1",
+      "id": "1HvkzeRxoZJ_W___SnNc-_YRoTBvGXKv1",
+      "http": 200,
+      "mime": "image/png",
+      "bytes": 290787,
+      "expectedBytes": 290787,
+      "matchesExpectedSize": true,
+      "sha256": "04b00e325570d7b1967ab2ce7e5f9da1a8ceb98ae0eb58131d3a9545c9ea3ab2"
+    },
+    {
+      "label": "USDC 2",
+      "id": "1O74Q56ChjplX1d59RRWgb4H_RPO_vBlV",
+      "http": 200,
+      "mime": "image/png",
+      "bytes": 218453,
+      "expectedBytes": 218453,
+      "matchesExpectedSize": true,
+      "sha256": "707b34c3b2282c06dab2d7d6741f9b3a67eab05db37a76a2dd122d1023ca09e9"
+    },
+    {
+      "label": "EURC 1",
+      "id": "1FbXmr5-hiSEsiEUrEyuFMFJtMBCzB0ar",
+      "http": 200,
+      "mime": "image/png",
+      "bytes": 279620,
+      "expectedBytes": 279620,
+      "matchesExpectedSize": true,
+      "sha256": "8df46e579454d09e819f769ecb50c3b5b12e89f1d2e631837fb11ef41700f0e6"
+    },
+    {
+      "label": "EURC 2",
+      "id": "1PJyrjmcgYRcyP30uEkPrnEYkDAwLdvni",
+      "http": 200,
+      "mime": "image/png",
+      "bytes": 231791,
+      "expectedBytes": 231791,
+      "matchesExpectedSize": true,
+      "sha256": "08e646b5be918b1058488c43e71917a7a7d40ce1823e1e750fc672b8b679b7b3"
+    },
+    {
+      "label": "cirBTC 1",
+      "id": "1LiV1ZczUkDk29jAZzRd2RfYsrNkS1t1l",
+      "http": 200,
+      "mime": "image/png",
+      "bytes": 278684,
+      "expectedBytes": 278684,
+      "matchesExpectedSize": true,
+      "sha256": "2dba4056181573d45dbc2b318052fdd6e72688dc633d919a85b3ead91b83129b"
+    },
+    {
+      "label": "cirBTC 2",
+      "id": "1Lqga9ls4vYStiWAdkYcA9JLxAjTzLWEL",
+      "http": 200,
+      "mime": "image/png",
+      "bytes": 236220,
+      "expectedBytes": 236220,
+      "matchesExpectedSize": true,
+      "sha256": "fcb42c481e1424b4f6aa45f27b8dd1e6662f5f9a239a84d59a487a2703fe2b1e"
+    }
+  ]
+}
