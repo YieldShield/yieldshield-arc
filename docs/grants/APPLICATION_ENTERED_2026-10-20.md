@@ -2,6 +2,24 @@
 
 20 October 2026. Entered into the saved Circle form and read back after reload; not submitted. Updates clarify deployment checks, specify token-specific CCTP routes and measurable pilot outcomes. All external-user and recruitment figures are targets. Mainnet remains conditional on a separately funded independent audit and legal review.
 
+## Attachment updates for review
+
+The investor deck was redesigned in place on 20 October: a new title slide,
+editable mechanism and integration diagrams, an actual deployed-product
+screenshot, a visual pilot plan, and larger founder portraits. The nine-slide
+PDF was inspected slide by slide and replaced at its existing Drive file ID.
+The saved application folder link therefore opens the revised materials.
+Native deck: https://docs.google.com/presentation/d/1eq5wCaF0WdbLTRk8_ZTXjNXcX1A6Z0pzSqBLpis_ReQ
+
+The Circle form explicitly requires both a codebase walkthrough and an
+integration demonstration in a video of no more than five minutes. The revised
+4:31 video prioritizes the deployed UI and retains only the essential
+integration code. The video and transcript were replaced at their existing
+Drive IDs at 07:38 UTC. Drive was still processing video playback immediately
+after replacement; the complete local file passed decode and visual checks.
+See [video validation](circle-submission/VIDEO_REVISION_2026-10-20.md) for
+the timing, scope and source evidence. No wallet-extension signing is claimed.
+
 ## Primary contact first name
 
 David
