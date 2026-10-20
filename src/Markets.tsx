@@ -7,39 +7,38 @@ export function Markets({ home = false }: { home?: boolean }) {
   return (
     <>
       {home ? (
-        <section className="hero">
-          <div>
-            <div className="eyebrow">YIELDSHIELD / ARC TESTNET</div>
-            <h1>
-              Keep the upside.
-              <br />
-              <em>Fix your floor in USDC.</em>
+        <section className="hero" aria-labelledby="home-title">
+          <div className="hero-art" aria-hidden="true">
+            <img
+              src="/images/arc-sculpture-1672.webp"
+              srcSet="/images/arc-sculpture-960.webp 960w, /images/arc-sculpture-1672.webp 1672w"
+              sizes="(max-width: 1100px) 960px, 1100px"
+              width="1672"
+              height="941"
+              fetchPriority="high"
+              alt=""
+            />
+          </div>
+          <div className="hero-copy">
+            <div className="eyebrow">YIELDSHIELD ARC</div>
+            <h1 id="home-title">
+              <span>Keep the upside.</span>
+              <span>Fix your floor.</span>
             </h1>
             <p>
-              Protect Circle EURC or cirBTC against a fixed USDC claim, or
-              provide the USDC behind it. Testnet only; test tokens have no
-              monetary value.
+              USDC-backed protection for EURC and cirBTC.
             </p>
-            <div className="button-row">
-              <RouteLink className="secondary-button" to="/protect">
-                Protect an asset ↗
+            <div className="hero-actions">
+              <RouteLink className="hero-primary" to="/protect">
+                Protect an asset <span aria-hidden="true">↗</span>
               </RouteLink>
-              <RouteLink className="secondary-button" to="/provide">
-                Provide capital ↗
+              <RouteLink className="hero-secondary" to="/provide">
+                Provide capital <span aria-hidden="true">↗</span>
               </RouteLink>
             </div>
-          </div>
-          <div className="hero-art" aria-hidden>
-            <svg viewBox="0 0 500 330">
-              <path d="M40 300a210 210 0 0 1 420 0" fill="#d9e7d8" />
-              <path d="M110 300a140 140 0 0 1 280 0" fill="#b3cfb8" />
-              <path d="M180 300a70 70 0 0 1 140 0" fill="#729e80" />
-              <path d="M20 300h460" stroke="#294d36" strokeWidth="2" />
-              <path d="M70 318h360" stroke="#ef775d" strokeWidth="10" />
-            </svg>
-            <span className="hero-caption">
-              CHAIN 5042002 · USDC AS GAS AND BACKING
-            </span>
+            <RouteLink className="hero-guide" to="/how-it-works">
+              How protection works <span aria-hidden="true">→</span>
+            </RouteLink>
           </div>
         </section>
       ) : (

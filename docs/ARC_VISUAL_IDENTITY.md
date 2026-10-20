@@ -27,7 +27,7 @@ carry the cover's identity into the homepage. The existing application
 navigation stays compact. Protect and Provide are the two primary actions;
 a quieter link explains the mechanism.
 
-Below 950 pixels, the copy and image stack so the sculpture cannot obscure
+Below 1100 pixels, the copy and image stack so the sculpture cannot obscure
 the text or controls. Decorative image edges blend into the green background.
 Focus outlines remain visible; button transitions respect reduced motion.
 
