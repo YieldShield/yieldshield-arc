@@ -63,5 +63,6 @@ On opening the replaced video, Drive reported that processing for playback was
 still underway. Local playback media and full decoding were checked; this note
 does not claim a completed Drive transcode. The local review copy is
 `output/circle-arc-submission/ui-first/YieldShield-Arc-UI-demo.mp4` in the parent
-workspace. The saved application retains the same attachment links and remains
-unsubmitted for founder review.
+workspace. The application retained these same attachment links and was submitted on
+20 October 2026 after anonymous download checks; see the
+[submission receipt](../CIRCLE_FINAL_REVIEW_2026-10-20.md).

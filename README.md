@@ -93,7 +93,7 @@ A Pyth pull-oracle path is fully implemented and tested as an alternative (`"ora
 - the safety checks to run before any transaction;
 - recipes for unsigned transactions (protect, both exits, settlement, provide, redeem, claim).
 
-Agents never sign or hold keys, and in Chronicle mode they never send native value. In Pyth mode, the manifest adds a price-update step, and the site's `/api/pyth-update` proxy keeps the Hermes key server-side. Proposed grant work would expose these as YieldShield MCP tools; no grant has been awarded. See the [current application draft](docs/grants/APPLICATION_ENTERED_2026-10-20.md).
+Agents never sign or hold keys, and in Chronicle mode they never send native value. In Pyth mode, the manifest adds a price-update step, and the site's `/api/pyth-update` proxy keeps the Hermes key server-side. Proposed grant work would expose these as YieldShield MCP tools; no grant has been awarded. See the [submitted Circle application](docs/grants/APPLICATION_ENTERED_2026-10-20.md).
 
 ## Run and verify
 

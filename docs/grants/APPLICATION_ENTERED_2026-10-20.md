@@ -1,8 +1,8 @@
-# Circle / Arc application — revised draft
+# Circle / Arc application — submitted copy
 
-20 October 2026. Entered into the saved Circle form and read back after reload; not submitted. Updates clarify deployment checks, specify token-specific CCTP routes and measurable pilot outcomes. All external-user and recruitment figures are targets. Mainnet remains conditional on a separately funded independent audit and legal review.
+20 October 2026. Submitted after final readback and individual file-access checks. Circle displayed “Fantastic — we've received your proposal.” See [final review and confirmation](CIRCLE_FINAL_REVIEW_2026-10-20.md). Updates clarify deployment checks, specify token-specific CCTP routes and measurable pilot outcomes. All external-user and recruitment figures are targets. Mainnet remains conditional on a separately funded independent audit and legal review.
 
-## Attachment updates for review
+## Attachment updates
 
 The investor deck was redesigned in place on 20 October: a new title slide,
 editable mechanism and integration diagrams, an actual deployed-product
@@ -166,4 +166,4 @@ https://drive.google.com/drive/folders/1odTT33caL8tVZl46jTVvN64MMRRClA_q
 
 ## Selections
 
-Germany; incorporated Yes; production No; Arc testnet only. Integrated USDC, EURC, cirBTC. Planned USDC, EURC, cirBTC, CCTP, App Kits. Funded No; audit support Yes; conflict No. Supporting folder view/download access confirmed. No final submission.
+Germany; incorporated Yes; production No; Arc testnet only. Integrated USDC, EURC, cirBTC. Planned USDC, EURC, cirBTC, CCTP, App Kits. Funded No; audit support Yes; conflict No. Supporting folder view/download access confirmed. Submitted on 20 October 2026; Circle receipt confirmed.

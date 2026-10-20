@@ -1,14 +1,20 @@
 # Circle application final review
 
-Checked 20 October 2026, 11:25 CEST.
+Final review and receipt recorded 20 October 2026, 17:32 CEST.
 
 ## Submission status
 
-**Not submitted yet.** The authorized submission attempt reached Questbook's
-wallet sign-in dialog. The form requires an existing Questbook wallet or a new
-one before accepting the proposal. Existing-wallet restoration asks for its
-private key. The owner has been asked to complete authentication directly in
-the open Circle Grants Program tab. The completed draft is preserved there.
+**Submitted on 20 October 2026.** Questbook wallet sign-in was completed by the owner.
+The reviewed application was then submitted once through Circle's form.
+All creation steps completed, followed by Circle's **Proposal Confirmation**:
+
+> Fantastic — we've received your proposal.
+
+> Thank you for applying to the Circle Grants Program. We're excited to review your application.
+
+[Saved confirmation](circle-submission/circle-submission-confirmation.png).
+Program: Circle 2026 Cohort 2. Total requested: $16,000.
+The confirmation dialog remains open in the browser for the owner.
 
 ## Reviewed application
 
@@ -28,9 +34,12 @@ the open Circle Grants Program tab. The completed draft is preserved there.
 ## Supporting materials
 
 The shared folder contains the final video, transcript, PDF, native deck and
-six PNG code screenshots: two each for USDC, EURC and cirBTC. Folder and sampled
-file permission readbacks show anyone-with-link reader access. The video,
-transcript and PDF each have explicit link-reader permissions.
+six PNG code screenshots: two each for USDC, EURC and cirBTC. The folder and all ten
+files have anyone-with-link reader permissions, verified individually. Fresh
+anonymous requests used no cookies, credentials or authentication headers:
+the folder listed all ten names, the native deck opened publicly, and all nine
+stored files downloaded successfully with their expected sizes. See
+[anonymous access checks](circle-submission/drive-access-verification.json).
 
 The uploaded video and PDF were downloaded again through Drive and compared
 with the reviewed final copies:
@@ -41,10 +50,11 @@ with the reviewed final copies:
 | PDF | 278,949 | `6b302d367fb2f0f723b03f30dcbcf74dea4a3139ecd41688735983a7ef4d8af0` |
 
 The downloaded video is H.264/AAC, 1920 × 1080, 270.666667 seconds (4:31),
-and its complete decode succeeds. Drive has completed processing and displays
-its video viewer, but its embedded player remained loading in this browser
-session; an uninterrupted in-browser playback is not claimed. The complete
-file is available for download and matches the validated local copy.
+and its complete decode succeeds. An earlier embedded-player
+check remained loading in the browser; uninterrupted streaming playback is not
+claimed. The subsequent anonymous download returned the complete video and
+matched the validated local copy. The PDF download also matched its reviewed
+copy byte for byte.
 
 The current nine-slide PDF and PowerPoint validation is recorded in
 [deck validation](deck/VALIDATION.md). The video uses genuine public UI captures,
@@ -58,8 +68,12 @@ The deployed status page read all three markets successfully; both Chronicle
 reference feeds were fresh within the three-hour limit. The final review also
 corrected older README test counts and report references to the previous deck/video.
 
-## Next action
+## Submission evidence
 
-After the owner completes Questbook wallet sign-in, inspect the final submission
-screen, submit once, and record the confirmation URL or proposal identifier.
-Do not treat the sign-in dialog as a successful submission.
+The signed-in form retained all 35 populated text/select fields, no over-length
+values or invalid markers, the intended product selections, and the required
+shared-file access confirmation. Circle then showed completed validation,
+upload and submission stages and its explicit receipt confirmation. No second
+submission was attempted.
+
+Portal: https://circle.questbook.app/proposal_form/?grantId=6992785dfb7e884efacadb1e&chainId=10
