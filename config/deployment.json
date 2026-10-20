@@ -3,7 +3,7 @@
   "network": "Arc Testnet",
   "chainId": 5042002,
   "status": "deployed-and-verified",
-  "rpcUrl": "https://rpc.testnet.arc.io",
+  "rpcUrl": "https://rpc.blockdaemon.testnet.arc.io",
   "explorer": "https://explorer.testnet.arc.io",
   "faucet": "https://faucet.circle.com",
   "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
@@ -156,9 +156,9 @@
       }
     }
   },
-  "verifiedAt": "2026-10-19T13:33:32.942Z",
+  "verifiedAt": "2026-10-20T06:35:30.637Z",
   "verification": {
-    "checkedAt": "2026-10-19T13:33:32.942Z",
+    "checkedAt": "2026-10-20T06:35:30.637Z",
     "checks": [
       "runtime code of 3 oracles, the factory and 3 pools matches contracts/out (immutables masked)",
       "USDC (6), EURC (6) and cirBTC (8) identities",

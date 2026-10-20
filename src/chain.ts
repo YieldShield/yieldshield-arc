@@ -18,6 +18,7 @@ import pool from "../config/abi/ShieldPool.json";
 import factory from "../config/abi/ShieldFactory.json";
 import token from "../config/abi/IERC20Metadata.json";
 import chronicleOracle from "../config/abi/ShieldChronicleOracle.json";
+import { ARC_RPC_URLS, readTransport } from "./rpc.mjs";
 export const localMode =
   import.meta.env.DEV && import.meta.env.VITE_LOCAL_DEMO === "true";
 export const config: Record<string, any> = localMode
@@ -33,11 +34,7 @@ export const arcTestnet = defineChain({
   nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
   rpcUrls: {
     default: {
-      http: [
-        "https://rpc.testnet.arc.io",
-        "https://rpc.blockdaemon.testnet.arc.io",
-        "https://rpc.drpc.testnet.arc.io",
-      ],
+      http: ARC_RPC_URLS,
     },
   },
   blockExplorers: {
@@ -66,11 +63,9 @@ const multicall = Boolean(
 export const client = createPublicClient({
   chain,
   batch: multicall ? { multicall: true } : undefined,
-  transport: http(config.rpcUrl, {
-    timeout: 12000,
-    retryCount: 1,
-    batch: !multicall,
-  }),
+  transport: localMode
+    ? http(config.rpcUrl, { timeout: 12000, retryCount: 1, batch: !multicall })
+    : readTransport([config.rpcUrl, ...ARC_RPC_URLS]),
 });
 // Nested token calls revert with OpenZeppelin errors; include them so failures decode.
 const tokenErrors = parseAbi([
