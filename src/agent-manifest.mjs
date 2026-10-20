@@ -183,9 +183,11 @@ export function buildAgentManifest(m, { site = SITE } = {}) {
       sourceCommit: m.source?.commit ?? null,
       testnetOnly: true,
       audited: false,
+      verificationMethod: live ? "runtime-bytecode-configuration-and-receipts" : null,
+      explorerSourceVerified: false,
       testTokensHaveMonetaryValue: false,
       note: live
-        ? "Verified Arc testnet deployment. Unaudited prototype; test tokens only."
+        ? "Arc testnet deployment checked against runtime bytecode, configuration and receipts. Source is not published as verified on the explorer. Unaudited prototype; test tokens only."
         : "No verified Arc testnet deployment yet; markets below have no addresses and must not be used.",
     },
     agentPolicy: {

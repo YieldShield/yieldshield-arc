@@ -26,6 +26,19 @@ The demo dollar, wrapper, demo vaults, backing vault and exchange were removed. 
 
 The split-risk idea comes from YieldShield's existing product design. This is an independent implementation for Arc, and it does not claim that the idea is new.
 
+## Deployment checks and source verification
+
+The manifest state `deployed-and-verified` is a machine-readable deployment gate. It means
+`npm run verify:arc-testnet` checked deployed runtime bytecode against the local Solidity
+artifacts (masking immutable slots), asset identities, contract wiring, oracle
+configuration, market terms and transaction receipts. The latest check is recorded
+in `config/deployment.json`.
+
+This is **not** an independent security audit or explorer-published source verification.
+As of 20 October 2026, the contract source is available in this public repository but
+has not been published as verified source on the Arc explorer. Application copy and
+the agent manifest must distinguish these claims.
+
 ## License
 
 The code is MIT-licensed, copyright Hawig Ventures UG (haftungsbeschränkt), which develops YieldShield. React, React Router, Vite, viem, Playwright and OpenZeppelin remain subject to their upstream licenses.

@@ -305,7 +305,9 @@ export function Status() {
             {loading ? "Refreshing…" : "Refresh network reads"}
           </button>
           <p className="card-description">
-            Local test results do not confirm an Arc testnet deployment.
+            {ready
+              ? "Deployment checks compare runtime bytecode, configuration and receipts. They are not an audit or explorer source verification."
+              : "Local test results do not confirm an Arc testnet deployment."}
           </p>
         </article>
         <article className="market-card">
