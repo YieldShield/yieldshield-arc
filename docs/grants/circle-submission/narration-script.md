@@ -1,117 +1,108 @@
-# YieldShield Arc: narration script (draft)
+# YieldShield Arc: narration script for founder review
 
-For the Circle Developer Grants demo video. 8 segments in a 4:56 video (295.8 seconds). Sections 1–7 retain the 19 October recording; section 8 was corrected on 20 October 2026.
+Revised 20 October 2026 around the deployed app. This replaces the earlier 4:56 video.
 
-- **Voice:** ElevenLabs "Chris" (voice_id `iP95p4xoKVk53GoZ742B`), model `eleven_multilingual_v2`, stability 0.5, similarity 0.75, style 0, speaker boost on, speed 1.1. Sections 1–7 used seed 4242 and neighbouring segments' text as context. Section 8 was generated in the signed-in ElevenLabs Chrome interface; no explicit seed or character alignment was supplied.
-- **Rules followed:** testnet only, unaudited, no monetary value, AI assistance and founder review, and the scripted test wallet are all stated. The narration promises no outcome or return, uses none of the wording the brief rules out, and does not claim a wallet-extension signature.
-- **Cues:** sections 1–7 use the original character alignment, with visuals about 0.25 s before their cue phrases. Section 8 uses two explanatory cards and a closing card; its narration is transcribed as one timed block, without invented sentence-level alignment.
+- **Duration:** 4:31 (270.666667 seconds), below the five-minute limit; H.264, 1920×1080, 30 fps, AAC audio.
+- **Format:** an edited sequence of real browser screenshots from the deployed app and Arc explorer, with narration. This is not continuous screen recording. UI screenshots were captured on 20 October 2026; displayed prices, balances and freshness are dated observations.
+- **Scope:** 2:47 of deployed UI and public receipts, 1:10 of essential USDC/EURC/cirBTC implementation, and 34 seconds of planned grant milestones. The grant requires both an integration demonstration and a codebase walkthrough.
+- **Wallet:** disconnected throughout the UI capture. No wallet signature, quote confirmation or newly executed transaction is shown. The explorer receipts are project-run scripted tests, not external adoption.
+- **Status:** Arc testnet only; unaudited; test tokens have no monetary value. Code was written with substantial AI assistance and founder review.
+- **Voice:** synthetic narration generated in the signed-in ElevenLabs browser using Chris, model `eleven_multilingual_v2`, speed 1.1, stability 0.5, similarity 0.75, style 0 and speaker boost. No subscription, voice clone or account-permission change was needed.
 
-## 1. Introduction
+## Production notes
 
-65 words, 25.7 s spoken.
+The text below is the exact 596-word narration. ElevenLabs Scribe transcription checked the spoken content and supplied word timing; the transcript preserves the intended spelling of code symbols and cirBTC. Visual cuts anticipate the corresponding words by approximately 0.2 seconds. Audio is 267.258750 seconds with a 0.4-second lead and three-second silent tail, rounded to the 30 fps frame grid.
 
-> This is YieldShield Arc, on Circle's Arc testnet. A holder deposits EURC or cirBTC for a fixed USDC claim, priced at entry and reserved at one hundred and fifty percent by capital providers. Before we start: this is Arc testnet only, the contracts are unaudited, and test tokens have no monetary value. The code was written with substantial AI assistance and reviewed by the founders.
+## 1. Start with the deployed app (0:00–0:32)
 
-Visual cues:
-
-- segment start → `title`
-- "A holder deposits" → `site-home`
-- "Before we start" → `disclaimers`
-
-## 2. Code walkthrough: USDC
-
-107 words, 51.5 s spoken.
-
-> First, USDC: the backing, the claim, and Arc's gas token. In ShieldPool.sol, every backing movement uses Arc's six-decimal USDC ERC-20 interface, never msg.value. The protect function fixes the claim in USDC and admits it only while providers' USDC covers one hundred and fifty percent. exitBacking pays that fixed claim and reads no price, so it keeps working when a feed is stale. After maturity, settleExpired credits each owner, and claimBacking pays out. Because USDC also pays gas, GAS_RESERVE in chain.ts keeps zero point one USDC unspent. The deploy script, deploy-arc-testnet.mjs, reads one balance through two views, and never signs below twice Arc's twenty gwei minimum base fee.
+> This is YieldShield Arc, running at arc dot yieldshield dot ai. These are real browser captures from October twentieth. The app protects EURC or cirBTC against a fixed USDC claim, funded by capital providers. All tokens are testnet only and have no monetary value. On Markets, the reference markets show Chronicle prices, freshness and available claims. The scenario lab is clearly labelled synthetic. Let us open the EURC market and inspect its terms.
 
 Visual cues:
 
-- segment start → `usdc-01-backing-erc20-interface`
-- "The protect function" → `usdc-02-protect-reserves-usdc`
-- "exitBacking pays" → `usdc-03-exit-backing`
-- "After maturity" → `usdc-04-settle-and-claim`
-- "Because USDC also pays gas" → `usdc-05-gas-token-and-address`
-- "The deploy script" → `usdc-06-one-balance-two-views`
+- 0:00: `01-home.png`
+- 0:19: `02-markets.png`
+- 0:29: `03-eurc-details.png`
 
-## 3. Code walkthrough: EURC
+## 2. Choose an asset and amount (0:32–0:59)
 
-68 words, 34.5 s spoken.
-
-> Second, EURC. In ShieldFactory.sol, the allowed function fixes the approved pairs: EURC with its reference adapter or the labelled scenario oracle, and cirBTC with its own. In ShieldOracles.sol, ShieldChronicleOracle prices EURC as Chronicle's EURC to USD feed divided by USDC to USD, so the result is in USDC. Values older than three hours revert; there is no fallback. ShieldPyth.sol holds a tested Pyth alternative, unused in this deployment.
+> The market details show one hundred and fifty percent collateral, fees only on realized gains, the exit delay and maturity. On Protect, I enter one EURC. The form keeps the asset, backing, price source and fees together. Switching to cirBTC updates the market and denomination. This browser is not connected to a wallet. Reviewing and submitting a transaction requires the person's wallet; no signature is being shown here.
 
 Visual cues:
 
-- segment start → `eurc-01-factory-allowed-pairs`
-- "In ShieldOracles.sol" → `eurc-02-chronicle-price`
-- "Values older than three hours" → `eurc-03-feed-wiring-and-pyth`
+- 0:32: `03-eurc-details.png`
+- 0:40: `04-protect-empty.png`
+- 0:40: `05-protect-one-eurc.png`
+- 0:47: `06-protect-cirbtc.png`
 
-## 4. Code walkthrough: cirBTC
+## 3. Provide the backing (0:59–1:24)
 
-55 words, 27.9 s spoken.
-
-> Third, cirBTC, with eight decimals. ShieldPool stores assetUnit, ten to the token's decimals, so protect prices every claim per whole unit. The price comes directly from Chronicle's cirBTC to USDC feed. ShieldDecimals.t.sol tests an eight-decimal cirBTC claim and its gain fee, the smallest claim in satoshis, and fuzzes conservation across six, eight and eighteen decimals.
-
-Visual cues:
-
-- segment start → `cirbtc-01-asset-unit`
-- "The price comes directly" → `cirbtc-02-chronicle-cirbtc-usdc`
-- "ShieldDecimals.t.sol tests" → `cirbtc-03-decimals-test`
-- "and fuzzes conservation" → `cirbtc-04-fuzz-conservation`
-
-## 5. Code walkthrough: agent manifest
-
-44 words, 20.2 s spoken.
-
-> Last, agents. agent-manifest.mjs builds the agent.json file the site serves: network, the three Circle assets, markets, terms, freshness rules, safety checks and unsigned transaction recipes. Here is the live file. Agents never sign or hold keys; they prepare calldata for the person's own wallet.
+> Now the other side: Provide. I choose the EURC reference market and enter two USDC. The page explains that USDC also pays Arc's network fees, so a small gas reserve must remain. Providers carry the downside. Deposits and withdrawals pause while protection is open, and redemption can include surrendered assets. The fee split is visible before a wallet is connected.
 
 Visual cues:
 
-- segment start → `agent-01-manifest-policy`
-- "the three Circle assets" → `agent-02-manifest-circle-assets`
-- "Here is the live file" → `site-agent-json`
-- "they prepare calldata" → `site-agents`
+- 0:59: `07-provide-two-usdc.png`
 
-## 6. Integration demo: live site
+## 4. Get test assets and manage positions (1:24–1:50)
 
-81 words, 33.7 s spoken.
-
-> Here is the live site, arc.yieldshield.ai, reading the Arc testnet deployment our verification script checked on October nineteenth. No wallet is connected in this recording. The markets page shows each Chronicle price and its age against the three-hour limit. Protect and provide show the terms: one hundred and fifty percent collateral, and fees only on realized gains: ten percent to providers, one percent each to the creator and the protocol. The status page lists the deployment addresses and live price freshness.
+> Get test USDC opens guidance for Circle's public faucet. It explains which token does what, and the user makes their own faucet request. Returning preserves the selected market and two USDC amount. Portfolio is where holders and providers manage positions, balances and activity. Here it honestly asks for a connection instead of displaying invented balances or a completed transaction.
 
 Visual cues:
 
-- segment start → `site-home`
-- "The markets page" → `site-markets`
-- "Protect and provide" → `site-protect`
-- "ten percent to providers" → `site-provide`
-- "The status page" → `site-status`
+- 1:24: `08-faucet.png`
+- 1:34: `09-return-preserved.png`
+- 1:38: `10-positions.png`
 
-## 7. Integration demo: on-chain receipts
+## 5. Inspect integrations and live reads (1:50–2:24)
 
-107 words, 36.3 s spoken.
-
-> No wallet extension has signed on Arc yet, so here are the real receipts on the Arc testnet explorer. Deploying the oracles, the factory and three markets took eight transactions. Then our own scripted test wallet, not a user, sent eight more on the EURC market, two of them approvals. It provided two USDC and protected two EURC, for a fixed claim of about two point two four USDC. It kept one EURC through an asset exit, with no gain and so no fee, and surrendered the other for one point one two USDC. Finally, it gave provider notice and redeemed a basket of USDC and EURC.
+> Agents have a dedicated page with a public manifest, contract interfaces and unsigned transaction recipes. The rules prohibit signing or holding keys and require simulation from the user's address. Network status exposes deployment addresses, the chain and live oracle freshness. After Refresh network reads, all three markets report successful reads. These deployment checks are distinct from an audit. The current contracts are unaudited and were built with substantial AI assistance and founder review.
 
 Visual cues:
 
-- segment start → `x-factory`
-- "Deploying the oracles" → `x-deployer`
-- "Then our own scripted" → `x-pool-txs`
-- "It provided two USDC" → `x-provide`
-- "for a fixed claim of about" → `x-protect`
-- "It kept one EURC" → `x-partial-exit`
-- "and surrendered the other" → `x-backing-exit`
-- "Finally" → `x-redeem`
+- 1:50: `11-agents.png`
+- 2:03: `12-status.png`
+- 2:09: `13-status-markets.png`
 
-## 8. Planned work and request
+## 6. Inspect real on-chain evidence (2:24–2:47)
 
-113 words; 55.614688 s source audio. Generated on 20 October 2026 with the same Chris voice and settings.
+> The linked Arc explorer contains the market's actual transactions. Our scripted test wallet has exercised providing, protection, both holder exit choices and provider redemption. These receipts are project-run tests, not external adoption or a recording of wallet-extension signing. The application links the reproducible evidence.
 
-> Next. Milestone one adds App Kit bridging from Arc to Ethereum Sepolia and Base Sepolia. USDC uses Token Messenger version two, through deposit for burn. EURC uses Cross Chain Token Service, approving its Token Manager before cross chain transfer. Acceptance requires four transfers: each token to each destination, with receipts and recovery evidence. Milestone two adds unsigned MCP tools and an ERC eight zero zero four agent identity. Milestone three recruits ten external testers for thirty journeys. These are targets, not traction. Mainnet needs an independent audit and legal review. We request sixteen thousand dollars: eleven thousand for milestones one to three, and five thousand only after both requirements are met. Thank you.
+Visual cues:
 
-Visual sequence (all bridge and agent integration work is planned):
+- 2:24: `14-explorer-transactions.png`
 
-- 3:56.8 → `card-bridge-corrected.png`: Arc testnet domain 26 to Ethereum Sepolia 0 and Base Sepolia 6; USDC uses `TokenMessengerV2.depositForBurn`; EURC approves `TokenManager` before `CrossChainTokenService.crossChainTransfer`; acceptance requires all four token/destination combinations with receipts, destination balances and recovery tests.
-- 4:27.0 → `card-roadmap-corrected.png`: unsigned MCP tools and ERC-8004 identity; 10 external testers and 30 journeys are targets; $11,000 for milestones 1–3 and $5,000 conditional on an independent audit and legal review.
-- 4:52.8 → `card-closing.png`: existing site, repository and evidence links; the closing card stays on screen for the silent tail.
+## 7. Codebase walkthrough: USDC (2:47–3:11)
 
-The first 236.8 seconds are retained from the original recording. The replacement uses a 0.4-second lead, the 55.614688-second audio and a 3-second tail, rounded to the 30 fps frame grid (295.833333 seconds total).
+> Here is the essential implementation. In ShieldPool dot sol, protect fixes the USDC claim at entry and reserves one hundred and fifty percent backing. Backing enters through Arc's six-decimal USDC token interface. The backing exit pays the recorded claim without reading an oracle, so that exit still works when prices are stale.
+
+Visual cues:
+
+- 2:47: `usdc-02-protect-reserves-usdc.png`
+- 3:04: `usdc-03-exit-backing.png`
+
+## 8. Codebase walkthrough: EURC (3:11–3:33)
+
+> EURC uses ShieldChronicleOracle. It divides the EURC dollar feed by the USDC dollar feed to price the asset in backing units. Zero, future-dated or stale values revert; a reference market never falls back to the synthetic scenario. The factory restricts which asset and oracle pairs can create markets.
+
+Visual cues:
+
+- 3:11: `eurc-02-chronicle-price.png`
+- 3:29: `eurc-01-factory-allowed-pairs.png`
+
+## 9. Codebase walkthrough: cirBTC (3:33–3:57)
+
+> For cirBTC, assetUnit preserves its eight-decimal denomination. Its adapter reads Chronicle's cirBTC to USDC feed directly. The decimal tests cover the smallest claim in satoshis and fuzz conservation across six, eight and eighteen decimals. These are the contracts behind the real market selection shown earlier, with USDC as backing and gas.
+
+Visual cues:
+
+- 3:33: `cirbtc-01-asset-unit.png`
+- 3:43: `cirbtc-04-fuzz-conservation.png`
+
+## 10. Grant milestones (3:57–4:31)
+
+> The grant adds App Kit routes from Arc to Ethereum Sepolia and Base Sepolia. USDC uses deposit for burn; EURC uses Cross Chain Token Service. Acceptance requires all four transfers with recovery evidence. Next are unsigned MCP tools, an agent identity and a pilot targeting ten testers and thirty journeys. We request sixteen thousand dollars, with five thousand conditional on an independent audit and legal review. Thank you.
+
+Visual cues:
+
+- 3:57: `card-bridge-corrected.png`
+- 4:14: `card-roadmap-corrected.png`
+- 4:27: `card-closing.png`
