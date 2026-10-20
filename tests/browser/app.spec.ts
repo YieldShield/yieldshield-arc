@@ -1,13 +1,22 @@
 import { test, expect } from "@playwright/test";
-test("undeployed UI, no-wallet feedback and scenario disclosures", async ({
+import { readFileSync } from "node:fs";
+const deployment = JSON.parse(readFileSync("config/deployment.json", "utf8"));
+test("deployed UI requires a wallet and keeps scenario disclosures", async ({
   page,
 }) => {
   await page.goto("/protect");
   await expect(
+    page.getByRole("heading", { name: "Choose your protection." }),
+  ).toBeVisible();
+  await expect(
     page.getByRole("button", { name: "Awaiting Arc testnet deployment" }),
-  ).toBeDisabled();
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Confirm protection", exact: true }),
+  ).toHaveCount(0);
   await page
     .getByRole("button", { name: "Connect wallet", exact: true })
+    .first()
     .click();
   await expect(page.getByRole("status")).toContainText(
     "Ethereum-compatible wallet",
@@ -98,6 +107,12 @@ test("agent manifest, llms.txt and ABIs are served and match the deployment", as
   const manifest = await (await request.get("/agent.json")).json();
   expect(manifest.schema).toBe("yieldshield-arc/agent-manifest/v1");
   expect(manifest.network.chainId).toBe(5042002);
+  expect(manifest.network.rpcUrl).toBe(deployment.rpcUrl);
+  expect(manifest.status.writesEnabled).toBe(true);
+  expect(manifest.contracts.factory).toBe(deployment.factory);
+  expect(manifest.oracles.eurc.kind).toBe("chronicle");
+  expect(manifest.oracles.eurc.maxAgeSeconds).toBe(deployment.maxPriceAge);
+  expect(manifest.pyth).toBeUndefined();
   expect(manifest.agentPolicy.signing).toBe("never");
   expect(manifest.assets.map((a: any) => a.symbol)).toEqual([
     "USDC",
@@ -106,10 +121,15 @@ test("agent manifest, llms.txt and ABIs are served and match the deployment", as
   ]);
   const llms = await (await request.get("/llms.txt")).text();
   expect(llms).toContain("Agents never sign");
-  expect(llms).toContain("Pyth price updates (push first)");
+  expect(llms).toContain("Chronicle's Arc testnet feeds");
+  expect(llms).toContain(`maxAgeSeconds (${deployment.maxPriceAge} s)`);
+  expect(llms).toContain("No reference market ever falls back to the scenario price");
+  expect(llms).not.toContain("Pyth price updates (push first)");
   // Without a configured API key the same-origin price proxy answers 503, never a key or upstream error page.
+  // The dormant Pyth endpoint still uses the configured feed allowlist; Chronicle's
+  // public agent manifest correctly omits Pyth-specific signing instructions.
   const proxy = await request.get(
-    `/api/pyth-update?ids=${Object.values(manifest.pyth.feeds).join(",")}`,
+    `/api/pyth-update?ids=${Object.values(deployment.pyth.feeds).join(",")}`,
   );
   expect([200, 503]).toContain(proxy.status());
   const abi = await (await request.get("/abi/ShieldPool.json")).json();
@@ -126,7 +146,7 @@ test("status and assets name Arc testnet, USDC decimals and no monetary value", 
   await page.goto("/status");
   await expect(page.getByText("Arc Testnet (Circle)")).toBeVisible();
   await expect(page.getByText("5042002", { exact: true })).toBeVisible();
-  await expect(page.getByText("https://rpc.testnet.arc.io")).toBeVisible();
+  await expect(page.getByText(deployment.rpcUrl, { exact: true })).toBeVisible();
   await page.goto("/assets");
   await expect(
     page.getByText("0x3600000000000000000000000000000000000000"),

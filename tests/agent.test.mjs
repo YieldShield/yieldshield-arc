@@ -9,6 +9,9 @@ import {
 import { formatAge, isFresh } from "../src/freshness.mjs";
 import { parseHermes, pythProblem, quotient } from "../src/pyth-math.mjs";
 const deployment = JSON.parse(readFileSync("config/deployment.json", "utf8"));
+// The deployed oracle is Chronicle. Keep Pyth coverage explicit so switching the
+// public deployment cannot silently remove tests for the alternative adapter.
+const pythDeployment = { ...deployment, oracle: "pyth" };
 const forbidden =
   /risk-free|100% protection|guaranteed (return|yield)|insured/i;
 test("the agent manifest describes the committed deployment", () => {
@@ -39,12 +42,60 @@ test("the agent manifest describes the committed deployment", () => {
       ["scenario", deployment.scenarioPool, true],
     ],
   );
-  assert.equal(m.oracles.eurc.maxAgeSeconds, deployment.pyth.maxAge);
+  assert.equal(m.oracles.eurc.kind, deployment.oracle);
+  assert.equal(
+    m.oracles.eurc.maxAgeSeconds,
+    deployment.oracle === "pyth"
+      ? deployment.pyth.maxAge
+      : deployment.maxPriceAge,
+  );
   assert.equal(m.oracles.scenario.synthetic, true);
 });
+test("Chronicle recipes use on-chain freshness and never substitute a scenario price", () => {
+  const m = buildAgentManifest({ ...deployment, oracle: "chronicle" });
+  assert.equal(m.pyth, undefined);
+  assert.equal(m.oracles.eurc.kind, "chronicle");
+  assert.deepEqual(m.oracles.eurc.feeds, {
+    "EURC/USD": deployment.chronicle.eurcUsd,
+    "USDC/USD": deployment.chronicle.usdcUsd,
+  });
+  assert.deepEqual(m.oracles.cirbtc.feeds, {
+    "CIRBTC/USDC": deployment.chronicle.cirbtcUsdc,
+  });
+  assert.equal(m.oracles.eurc.maxAgeSeconds, deployment.maxPriceAge);
+  assert.match(m.unsignedTransactions.conventions.value, /^always 0:/);
+  assert.equal(
+    m.unsignedTransactions.conventions.order,
+    "one transaction per action",
+  );
+  const protect = m.unsignedTransactions.recipes.find(
+    (r) => r.intent === "protect",
+  );
+  assert.equal(protect.steps.length, 2);
+  assert.match(protect.steps[0], /^asset\.approve/);
+  assert.match(protect.steps[1], /^market\.protect/);
+  assert.doesNotMatch(
+    JSON.stringify(m.unsignedTransactions),
+    /updatePriceFeeds|Hermes/,
+  );
+  assert.ok(
+    m.safetyChecks.some((c) => c.includes("price() succeeds and age() ≤ maxAge()")),
+  );
+  assert.ok(
+    m.oracleFreshnessRules.some(
+      (r) =>
+        r.includes("exitBacking") &&
+        r.includes("claimBacking need no price and keep working"),
+    ),
+  );
+  assert.ok(
+    m.oracleFreshnessRules.includes(
+      "No reference market ever falls back to the scenario price.",
+    ),
+  );
+});
 test("unsigned-transaction recipes push the Pyth price first and send value only to Pyth", () => {
-  const m = buildAgentManifest(deployment);
-  assert.equal(deployment.oracle, "pyth");
+  const m = buildAgentManifest(pythDeployment);
   assert.match(
     m.unsignedTransactions.conventions.value,
     /0 for every YieldShield contract call/,
@@ -87,9 +138,18 @@ test("llms.txt lists markets, freshness rules and the no-signing rule", () => {
   assert.match(text, /Agents never sign/);
   assert.match(text, /SYNTHETIC scenario price/);
   assert.match(text, /INVALID_OR_STALE_PRICE/);
+  assert.match(text, /Chronicle's Arc testnet feeds/);
+  assert.match(text, new RegExp(`maxAgeSeconds \\(${deployment.maxPriceAge} s\\)`));
+  assert.match(text, /No reference market ever falls back to the scenario price/);
+  assert.doesNotMatch(text, /Pyth price updates \(push first\)/);
+  assert.doesNotMatch(text, /pyth\.updatePriceFeeds/);
+  assert.match(text, /chain ID 5042002/);
+});
+test("Pyth llms.txt preserves the mandatory update and fee instructions", () => {
+  const text = buildLlmsTxt(buildAgentManifest(pythDeployment));
   assert.match(text, /Pyth price updates \(push first\)/);
   assert.match(text, /pyth\.updatePriceFeeds/);
-  assert.match(text, /chain ID 5042002/);
+  assert.match(text, /only pyth\.updatePriceFeeds carries value/);
 });
 test("agent text avoids insurance-style claims", () => {
   const m = buildAgentManifest(deployment);
@@ -108,6 +168,15 @@ test("a verified deployment enables writes and carries its addresses", () => {
   assert.equal(m.status.writesEnabled, true);
   assert.equal(m.contracts.factory, verified.factory);
   assert.equal(m.markets[0].address, verified.eurcPool);
+});
+test("a configured but unverified deployment never enables agent writes", () => {
+  const m = buildAgentManifest({ ...deployment, status: "deployed" });
+  assert.equal(m.status.writesEnabled, false);
+  assert.ok(
+    m.safetyChecks.includes(
+      "status.writesEnabled is true; otherwise prepare nothing.",
+    ),
+  );
 });
 test("Pyth quotient, Hermes parsing and value checks mirror ShieldPythOracle", () => {
   const eurc = {
