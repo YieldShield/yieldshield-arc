@@ -1,12 +1,12 @@
 # YieldShield Arc: demo video transcript (draft)
 
-Circle Developer Grants, Circle 2026 Cohort 2. Draft of 19 October 2026.
+Circle Developer Grants, Circle 2026 Cohort 2. Recorded on 19 October 2026; roadmap narration and visuals revised on 20 October 2026.
 
-- **Video:** `YieldShield-Arc-Circle-demo-draft.mp4`, 4:41 (281.1 s), 1920×1080, 30 fps. The video file is shared separately and is not stored in the repository.
+- **Video:** `YieldShield-Arc-Circle-demo-draft.mp4`, 4:56 (295.8 s), 1920×1080, 30 fps. The video file is shared separately and is not stored in the repository.
 - **Narration:** synthetic voice from ElevenLabs (voice "Chris", model `eleven_multilingual_v2`). The text below is the exact narration.
 - **Code:** [YieldShield/yieldshield-arc](https://github.com/YieldShield/yieldshield-arc) at commit `cad2203`. The contracts and scripts shown are unchanged since `d48ec26`, the source commit of the Arc testnet deployment `arc-testnet-2026-10-19T13-33-11Z-5929f2`.
 - **Status:** Arc testnet only. Unaudited. Test tokens have no monetary value. The code was written with substantial AI assistance and reviewed by the founders.
-- **Demo:** the on-chain journey shown was run by our own scripted test wallet `0x424cb86EEd3Bf1101C0f2b6f74Db2C291284456d`, not by users. No wallet extension (MetaMask) has signed on Arc yet, and none is shown.
+- **Demo:** the on-chain journey shown was run by our own scripted test wallet `0x424cb86EEd3Bf1101C0f2b6f74Db2C291284456d`, not by users. At the time of the 19 October capture, no wallet extension (MetaMask) had signed on Arc; none is shown in this recording.
 
 ## Circle products and where they are used
 
@@ -25,7 +25,7 @@ Circle Developer Grants, Circle 2026 Cohort 2. Draft of 19 October 2026.
 | cirBTC | Used | [`contracts/src/ShieldOracles.sol`](https://github.com/YieldShield/yieldshield-arc/blob/cad2203f7fed336d159c20c2119660bbff61e4d5/contracts/src/ShieldOracles.sol#L6-L13) | `ShieldChronicleOracle.price()` without a quote feed (`toUsdcUnits`): Chronicle CIRBTC/USDC |
 | cirBTC | Tested | [`contracts/test/ShieldDecimals.t.sol`](https://github.com/YieldShield/yieldshield-arc/blob/cad2203f7fed336d159c20c2119660bbff61e4d5/contracts/test/ShieldDecimals.t.sol#L45-L161) | `testCirbtcEightDecimalFloorAndGainFee`, `testCirbtcMinimumClaimInSatoshis`, `testFuzzConservationAcrossDecimals` |
 | USDC, EURC, cirBTC | Used | [`src/agent-manifest.mjs`](https://github.com/YieldShield/yieldshield-arc/blob/cad2203f7fed336d159c20c2119660bbff61e4d5/src/agent-manifest.mjs#L93-L419) | `buildAgentManifest()` → `/agent.json` (assets, agent policy, safety checks, unsigned-transaction recipes); `buildLlmsTxt()` → `/llms.txt` |
-| CCTP V2, App Kits | Planned (milestone 1) | [`config/deployment.json`](https://github.com/YieldShield/yieldshield-arc/blob/cad2203f7fed336d159c20c2119660bbff61e4d5/config/deployment.json#L33-L37) | only the domain (26) and contract addresses are recorded; no CCTP code yet |
+| CCTP / App Kit Bridge | Planned (milestone 1) | [`CCTP_ROUTE_VALIDATION_2026-10-20.md`](../CCTP_ROUTE_VALIDATION_2026-10-20.md) | USDC: `TokenMessengerV2.depositForBurn`; EURC: approve `TokenManager`, then `CrossChainTokenService.crossChainTransfer`. Arc testnet (26) → Ethereum Sepolia (0) and Base Sepolia (6). All four successful transfers remain acceptance work; no bridge implementation is claimed. |
 
 ## 1. Introduction (0:00–0:26)
 
@@ -200,31 +200,19 @@ On screen:
 - 3:48: Arc testnet explorer: tx 0xcacf9c54…363f, backing exit, 1.122456 USDC (scripted test wallet)
 - 3:51: Arc testnet explorer: tx 0x5c5874c3…95d8, provider redemption, 1.679298 USDC plus 0.285714 EURC (scripted test wallet)
 
-## 8. Planned work and request (3:56–4:41)
+## 8. Planned work and request (3:56–4:56)
 
-**[3:57]** Next.
-
-**[3:58]** Milestone one adds CCTP V2 exits, so USDC claims and EURC can leave Arc, domain twenty-six, through TokenMessengerV2 and Circle's App Kit Bridge.
-
-**[4:10]** Milestone two adds Arc to YieldShield's MCP server, with tools that never sign, and registers our agent in Arc's ERC-8004 registry on testnet.
-
-**[4:20]** Milestone three is a ten-tester pilot with monitoring.
-
-**[4:23]** A capped mainnet release comes only after an independent audit and legal review.
-
-**[4:27]** We are requesting sixteen thousand dollars: eleven thousand for milestones one to three, and five thousand for mainnet, paid only if that review is in place.
-
-**[4:35]** Thank you.
+**[3:57]** Next. Milestone one adds App Kit bridging from Arc to Ethereum Sepolia and Base Sepolia. USDC uses Token Messenger version two, through deposit for burn. EURC uses Cross Chain Token Service, approving its Token Manager before cross chain transfer. Acceptance requires four transfers: each token to each destination, with receipts and recovery evidence. Milestone two adds unsigned MCP tools and an ERC eight zero zero four agent identity. Milestone three recruits ten external testers for thirty journeys. These are targets, not traction. Mainnet needs an independent audit and legal review. We request sixteen thousand dollars: eleven thousand for milestones one to three, and five thousand only after both requirements are met. Thank you.
 
 On screen:
 
-- 3:56: Planned-work screenshot (not built yet): `config/deployment.json` lines 33–37 (CCTP domain 26, TokenMessengerV2, MessageTransmitterV2) and `src/agent-manifest.mjs` lines 414–417 (roadmap)
-- 4:10: Planned-work screenshot (not built yet): `src/agent-manifest.mjs` lines 344–353 and 368–375, recipes with their planned MCP tool names
-- 4:20: Card: the four milestones, Circle products and budgets; request $16,000 ($11,000 core, $5,000 conditional)
-- 4:35: Closing card: site, repository, factory address, evidence files and disclaimers
+- 3:56.8: Planned bridge card: Arc testnet (26) → Ethereum Sepolia (0) and Base Sepolia (6). USDC uses `TokenMessengerV2.depositForBurn`; EURC approves `TokenManager` before `CrossChainTokenService.crossChainTransfer`. Four transfers, destination balances, receipts and recovery tests are the acceptance criteria.
+- 4:27.0: Planned roadmap card: unsigned MCP tools, ERC-8004 identity and a pilot targeting 10 external testers / 30 journeys. Request $16,000: $11,000 for milestones 1–3; $5,000 conditional on an independent security audit and legal review. Those reviews require separate funding. Pilot figures are targets, not traction.
+- 4:52.8: Closing card with site, repository, factory address, evidence files and disclaimers.
 
 ## Notes
 
-- Timestamps come from ElevenLabs character timings and the assembled timeline; they are accurate to about a quarter of a second.
-- Explorer and site screenshots were captured on 19 October 2026 between 14:17 and 14:20 UTC. Live values on the site (prices, price age) change over time.
-- The Arc testnet explorer shows the contracts without published source code; "verified" in this video means our own `verify:arc-testnet` script, which read back the runtime code, wiring, terms and receipts.
+- Timestamps in sections 1–7 come from the original ElevenLabs character timings and assembled timeline, accurate to about a quarter of a second. The replacement section 8 is a single timed narration block; it has no fabricated sentence-level alignment. Its audio is 55.614688 seconds with a 0.4-second lead and 3-second silent tail; the final video is rounded to the 30 fps frame grid.
+- Explorer and site screenshots in sections 1–7 were captured on 19 October 2026 between 14:17 and 14:20 UTC. Live values (prices, price age and balances) change over time; this is a dated walkthrough rather than a current-state dashboard.
+- At the time of the 19 October capture, the Arc testnet explorer showed the contracts without published source code. “Verified” in the recording refers to our own `verify:arc-testnet` script reading back runtime code, wiring, terms and receipts; it does not mean a security audit.
+- The corrected bridge distinction is supported by the [Arc App Kit Bridge documentation](https://docs.arc.io/app-kit/bridge), [Circle's expanded-asset flow comparison](https://developers.circle.com/cctp/expanded-assets/concepts/cctp-differences), and the project's dated [route validation](../CCTP_ROUTE_VALIDATION_2026-10-20.md). The [pilot plan](../ARC_PILOT_PLAN.md) records proposed recruitment and success criteria without claiming existing commitments.

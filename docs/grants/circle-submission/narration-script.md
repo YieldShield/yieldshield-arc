@@ -1,10 +1,10 @@
 # YieldShield Arc: narration script (draft)
 
-For the Circle Developer Grants demo video. 623 words in 8 segments; 4:28 of speech in a 4:41 video.
+For the Circle Developer Grants demo video. 8 segments in a 4:56 video (295.8 seconds). Sections 1–7 retain the 19 October recording; section 8 was corrected on 20 October 2026.
 
-- **Voice:** ElevenLabs "Chris" (voice_id `iP95p4xoKVk53GoZ742B`), model `eleven_multilingual_v2`, stability 0.5, similarity 0.75, style 0, speaker boost on, speed 1.1, seed 4242. One request per segment, with the neighbouring segments' text as context.
+- **Voice:** ElevenLabs "Chris" (voice_id `iP95p4xoKVk53GoZ742B`), model `eleven_multilingual_v2`, stability 0.5, similarity 0.75, style 0, speaker boost on, speed 1.1. Sections 1–7 used seed 4242 and neighbouring segments' text as context. Section 8 was generated in the signed-in ElevenLabs Chrome interface; no explicit seed or character alignment was supplied.
 - **Rules followed:** testnet only, unaudited, no monetary value, AI assistance and founder review, and the scripted test wallet are all stated. The narration promises no outcome or return, uses none of the wording the brief rules out, and does not claim a wallet-extension signature.
-- **Cues:** each visual starts about 0.25 s before its cue phrase is spoken.
+- **Cues:** sections 1–7 use the original character alignment, with visuals about 0.25 s before their cue phrases. Section 8 uses two explanatory cards and a closing card; its narration is transcribed as one timed block, without invented sentence-level alignment.
 
 ## 1. Introduction
 
@@ -104,14 +104,14 @@ Visual cues:
 
 ## 8. Planned work and request
 
-96 words, 38.9 s spoken.
+113 words; 55.614688 s source audio. Generated on 20 October 2026 with the same Chris voice and settings.
 
-> Next. Milestone one adds CCTP V2 exits, so USDC claims and EURC can leave Arc, domain twenty-six, through TokenMessengerV2 and Circle's App Kit Bridge. Milestone two adds Arc to YieldShield's MCP server, with tools that never sign, and registers our agent in Arc's ERC-8004 registry on testnet. Milestone three is a ten-tester pilot with monitoring. A capped mainnet release comes only after an independent audit and legal review. We are requesting sixteen thousand dollars: eleven thousand for milestones one to three, and five thousand for mainnet, paid only if that review is in place. Thank you.
+> Next. Milestone one adds App Kit bridging from Arc to Ethereum Sepolia and Base Sepolia. USDC uses Token Messenger version two, through deposit for burn. EURC uses Cross Chain Token Service, approving its Token Manager before cross chain transfer. Acceptance requires four transfers: each token to each destination, with receipts and recovery evidence. Milestone two adds unsigned MCP tools and an ERC eight zero zero four agent identity. Milestone three recruits ten external testers for thirty journeys. These are targets, not traction. Mainnet needs an independent audit and legal review. We request sixteen thousand dollars: eleven thousand for milestones one to three, and five thousand only after both requirements are met. Thank you.
 
-Visual cues:
+Visual sequence (all bridge and agent integration work is planned):
 
-- segment start → `planned-01-cctp`
-- "Milestone two" → `planned-02-mcp-tools`
-- "Milestone three" → `roadmap`
-- "Thank you" → `closing`
+- 3:56.8 → `card-bridge-corrected.png`: Arc testnet domain 26 to Ethereum Sepolia 0 and Base Sepolia 6; USDC uses `TokenMessengerV2.depositForBurn`; EURC approves `TokenManager` before `CrossChainTokenService.crossChainTransfer`; acceptance requires all four token/destination combinations with receipts, destination balances and recovery tests.
+- 4:27.0 → `card-roadmap-corrected.png`: unsigned MCP tools and ERC-8004 identity; 10 external testers and 30 journeys are targets; $11,000 for milestones 1–3 and $5,000 conditional on an independent audit and legal review.
+- 4:52.8 → `card-closing.png`: existing site, repository and evidence links; the closing card stays on screen for the silent tail.
 
+The first 236.8 seconds are retained from the original recording. The replacement uses a 0.4-second lead, the 55.614688-second audio and a 3-second tail, rounded to the 30 fps frame grid (295.833333 seconds total).
