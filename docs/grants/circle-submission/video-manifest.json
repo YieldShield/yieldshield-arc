@@ -1,0 +1,129 @@
+{
+  "captureDate": "2026-10-20",
+  "videoFile": "YieldShield-Arc-UI-demo.mp4",
+  "durationSeconds": 270.666667,
+  "sizeBytes": 11853770,
+  "sha256": "a978fb19ca9c212d5944d911cd26459fa3eff561a7cc18d3a748e5c1a504f7b3",
+  "videoDriveId": "1aFfIWxz5a6jiGJfXR2vTM8rvgkWU59pj",
+  "transcriptDriveId": "1tdUpJnxMRgDl5Da1pnIls1CtKOI0IUsy",
+  "captureMethod": "Edited real browser screenshot sequence; wallet disconnected; no signature or newly executed transaction shown.",
+  "site": "https://arc.yieldshield.ai/",
+  "audio": {
+    "provider": "ElevenLabs signed-in Chrome interface",
+    "voice": "Chris",
+    "model": "eleven_multilingual_v2",
+    "durationSeconds": 267.25875,
+    "speed": 1.1,
+    "alignment": "ElevenLabs Scribe browser transcription"
+  },
+  "sections": [
+    {
+      "title": "Start with the deployed app",
+      "start": 0,
+      "end": 32.18
+    },
+    {
+      "title": "Choose an asset and amount",
+      "start": 32.18,
+      "end": 59.12
+    },
+    {
+      "title": "Provide the backing",
+      "start": 59.12,
+      "end": 84.18
+    },
+    {
+      "title": "Get test assets and manage positions",
+      "start": 84.18,
+      "end": 110.12
+    },
+    {
+      "title": "Inspect integrations and live reads",
+      "start": 110.12,
+      "end": 144.14
+    },
+    {
+      "title": "Inspect real on-chain evidence",
+      "start": 144.14,
+      "end": 166.92
+    },
+    {
+      "title": "Codebase walkthrough: USDC",
+      "start": 166.92,
+      "end": 190.82
+    },
+    {
+      "title": "Codebase walkthrough: EURC",
+      "start": 190.82,
+      "end": 213.3
+    },
+    {
+      "title": "Codebase walkthrough: cirBTC",
+      "start": 213.3,
+      "end": 237.16
+    },
+    {
+      "title": "Grant milestones",
+      "start": 237.16,
+      "end": 270.67
+    }
+  ],
+  "captures": [
+    {
+      "file": "01-home.png",
+      "sha256": "8d6f49ad9cf2a437b360378f1e19a80f8019d52b25c08da727541d4f3be3e38e"
+    },
+    {
+      "file": "02-markets.png",
+      "sha256": "f685dbecff51bf9e64264babeadd835c38fe80f76532498bcc4deb6fc06f58f2"
+    },
+    {
+      "file": "03-eurc-details.png",
+      "sha256": "302314ab3c7429ebccf9627bb9063d9038cb1ba66849a683e559a2841edb4b10"
+    },
+    {
+      "file": "04-protect-empty.png",
+      "sha256": "b9f73a59c4352ce82be4cabd506774051f1eb4dedb2f2763fd7cbe64a4b0cbd8"
+    },
+    {
+      "file": "05-protect-one-eurc.png",
+      "sha256": "ab952f4d6dfc6594625ea7e0198d4e98b19dc8f756904fd072d3ccfcf1972b77"
+    },
+    {
+      "file": "06-protect-cirbtc.png",
+      "sha256": "d9e33010c12d86173dbb5a291b1d27ec423913b1fb59defd7fb3f83a4fd1eeab"
+    },
+    {
+      "file": "07-provide-two-usdc.png",
+      "sha256": "c13bcf2f3bd52857d40963df69f5e1d9da7a390a6d32bfee496a6f88dd047649"
+    },
+    {
+      "file": "08-faucet.png",
+      "sha256": "7a32b54b3e7073053dc2cd5040a8fb0ba5652c6297d22a6aca72798b53b8c614"
+    },
+    {
+      "file": "09-return-preserved.png",
+      "sha256": "2029395b704a3a983638bd4c2ad1e011a7379a0cc9f71f1b3df6c2e2dbfa0dec"
+    },
+    {
+      "file": "10-positions.png",
+      "sha256": "6254891bbe009c5393279bbd92040fc58e3c48e68112a01122c62caafddb80f0"
+    },
+    {
+      "file": "11-agents.png",
+      "sha256": "81d2fa0a3a008ea002f966922201d1f4839413c88a6730e5e27f33c513b58655"
+    },
+    {
+      "file": "12-status.png",
+      "sha256": "e081f4b912ce20c968abce73d134c84a99e1a5c4f40ff654e659ab7530ec7701"
+    },
+    {
+      "file": "13-status-markets.png",
+      "sha256": "453b9e1475530f79e34650b10540530a0f2c24658ee87427f9a9ed12d91837cf"
+    },
+    {
+      "file": "14-explorer-transactions.png",
+      "sha256": "12d4ce6ed157a354c20a0f619721b173ab76d0c421438afb1f29ad51f0971f88"
+    }
+  ]
+}
