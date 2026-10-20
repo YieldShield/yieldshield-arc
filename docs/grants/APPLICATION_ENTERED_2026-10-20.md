@@ -131,7 +131,7 @@ Request: $16,000 in total. $11,000 is for milestones 1-3; $5,000 is for mileston
 
 ## Where can we verify your traction?
 
-Arc testnet since 19 Oct; no external users. Runtime, wiring and receipts checked; unaudited, not explorer source-verified. Our own test-wallet receipts, not traction: https://github.com/YieldShield/yieldshield-arc/blob/main/docs/evidence/arc-testnet-journey.json
+Arc testnet only; no external users or revenue. Project-run test transactions, not traction. Runtime/configuration checked; unaudited. https://explorer.testnet.arc.io/address/0x583EcBBf94C2B978A9f02d32BF629846e9b0626C
 
 ## Verification documents (Google Drive folder link)
 
