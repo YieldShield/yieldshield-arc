@@ -1,5 +1,10 @@
 # Circle Developer Grants — YieldShield Arc
 
+> Historical planning draft. The [20 October saved application](APPLICATION_ENTERED_2026-10-20.md)
+> supersedes its status, checklist and proposed milestones. In particular, EURC uses
+> CrossChainTokenService, not TokenMessengerV2; see [route validation](CCTP_ROUTE_VALIDATION_2026-10-20.md).
+> The application and attachments are now prepared, with submission held for owner review.
+
 **Status: draft, not submitted (updated 19 October 2026, evening).**
 - **Form:** the "Circle 2026 Cohort 2" Questbook form was read field by field. Nothing was entered, uploaded or submitted, and no terms were accepted.
 - **Live on Arc testnet.**

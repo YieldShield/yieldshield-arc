@@ -415,7 +415,7 @@ export function buildAgentManifest(m, { site = SITE } = {}) {
     },
     roadmap: {
       mcp: "Planned (grant milestone): expose these reads and recipes as YieldShield MCP tools (list pools, pool safety, oracle freshness, unsigned transaction preparation) using the main repository's agent-core.",
-      cctp: "Planned (grant milestone): optional CCTP V2 exits of USDC claims from Arc (domain 26) to another CCTP domain, as a separate reviewed transaction.",
+      cctp: "Planned, not implemented: App Kit Bridge exits from Arc Testnet (domain 26) to Ethereum Sepolia (0) and Base Sepolia (6). USDC uses TokenMessengerV2.depositForBurn; EURC uses CrossChainTokenService.crossChainTransfer with per-token TokenManager approval. Separate user-reviewed transfers; four completed token/route combinations required for the grant milestone.",
     },
   };
 }

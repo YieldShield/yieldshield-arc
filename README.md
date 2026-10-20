@@ -10,7 +10,9 @@ USDC-backed split-risk markets on Circle's Arc testnet. A holder deposits Circle
 
 ## Status — 19 October 2026
 
-**Deployed and verified on Arc testnet**, with Chronicle reference prices.
+**Deployed on Arc testnet**, with Chronicle reference prices. Runtime bytecode,
+configuration and receipts have been checked by the project's verification script;
+this is not an audit or explorer source verification.
 
 - **Deployment:** `arc-testnet-2026-10-19T13-33-11Z-5929f2`, 8 transactions from source commit `d48ec26`, signed by the dedicated test signer `0x10D4…f50a`.
 - **Verification:** `npm run verify:arc-testnet` passed at 13:33 UTC. It read back:
@@ -91,7 +93,7 @@ A Pyth pull-oracle path is fully implemented and tested as an alternative (`"ora
 - the safety checks to run before any transaction;
 - recipes for unsigned transactions (protect, both exits, settlement, provide, redeem, claim).
 
-Agents never sign or hold keys, and in Chronicle mode they never send native value. In Pyth mode, the manifest adds a price-update step, and the site's `/api/pyth-update` proxy keeps the Hermes key server-side. The funded next step is to expose these as YieldShield MCP tools; see the [application draft](docs/grants/CIRCLE_DEVELOPER_GRANT_2026-10-19.md).
+Agents never sign or hold keys, and in Chronicle mode they never send native value. In Pyth mode, the manifest adds a price-update step, and the site's `/api/pyth-update` proxy keeps the Hermes key server-side. Proposed grant work would expose these as YieldShield MCP tools; no grant has been awarded. See the [current application draft](docs/grants/APPLICATION_ENTERED_2026-10-20.md).
 
 ## Run and verify
 
