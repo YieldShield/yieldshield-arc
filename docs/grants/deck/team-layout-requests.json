@@ -1,0 +1,520 @@
+[
+  {
+    "deleteText": {
+      "objectId": "p7_i3",
+      "textRange": {
+        "type": "ALL"
+      }
+    }
+  },
+  {
+    "insertText": {
+      "objectId": "p7_i3",
+      "insertionIndex": 0,
+      "text": "The founders"
+    }
+  },
+  {
+    "updatePageElementTransform": {
+      "objectId": "p7_i3",
+      "applyMode": "ABSOLUTE",
+      "transform": {
+        "scaleX": 3.683,
+        "scaleY": 0.254,
+        "translateX": 571500,
+        "translateY": 1047750,
+        "unit": "EMU"
+      }
+    }
+  },
+  {
+    "updateTextStyle": {
+      "objectId": "p7_i3",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "fontFamily": "Arial",
+        "fontSize": {
+          "magnitude": 34.5,
+          "unit": "PT"
+        },
+        "bold": true,
+        "foregroundColor": {
+          "opaqueColor": {
+            "rgbColor": {
+              "red": 0.09803921568627451,
+              "green": 0.23921568627450981,
+              "blue": 0.19215686274509805
+            }
+          }
+        }
+      },
+      "fields": "fontFamily,fontSize,bold,foregroundColor"
+    }
+  },
+  {
+    "updateParagraphStyle": {
+      "objectId": "p7_i3",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "lineSpacing": 110,
+        "spaceAbove": {
+          "magnitude": 0,
+          "unit": "PT"
+        },
+        "spaceBelow": {
+          "magnitude": 0,
+          "unit": "PT"
+        }
+      },
+      "fields": "lineSpacing,spaceAbove,spaceBelow"
+    }
+  },
+  {
+    "deleteText": {
+      "objectId": "p7_i4",
+      "textRange": {
+        "type": "ALL"
+      }
+    }
+  },
+  {
+    "insertText": {
+      "objectId": "p7_i4",
+      "insertionIndex": 0,
+      "text": "David Hawig"
+    }
+  },
+  {
+    "updatePageElementTransform": {
+      "objectId": "p7_i4",
+      "applyMode": "ABSOLUTE",
+      "transform": {
+        "scaleX": 1.0795,
+        "scaleY": 0.13335,
+        "translateX": 2571750,
+        "translateY": 2171700,
+        "unit": "EMU"
+      }
+    }
+  },
+  {
+    "updateTextStyle": {
+      "objectId": "p7_i4",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "fontFamily": "Arial",
+        "fontSize": {
+          "magnitude": 22.5,
+          "unit": "PT"
+        },
+        "bold": true,
+        "foregroundColor": {
+          "opaqueColor": {
+            "rgbColor": {
+              "red": 0.09803921568627451,
+              "green": 0.23921568627450981,
+              "blue": 0.19215686274509805
+            }
+          }
+        }
+      },
+      "fields": "fontFamily,fontSize,bold,foregroundColor"
+    }
+  },
+  {
+    "updateParagraphStyle": {
+      "objectId": "p7_i4",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "lineSpacing": 110,
+        "spaceAbove": {
+          "magnitude": 0,
+          "unit": "PT"
+        },
+        "spaceBelow": {
+          "magnitude": 0,
+          "unit": "PT"
+        }
+      },
+      "fields": "lineSpacing,spaceAbove,spaceBelow"
+    }
+  },
+  {
+    "deleteText": {
+      "objectId": "p7_i5",
+      "textRange": {
+        "type": "ALL"
+      }
+    }
+  },
+  {
+    "insertText": {
+      "objectId": "p7_i5",
+      "insertionIndex": 0,
+      "text": "Founder and Managing Director\nFormer ecosystem director at Web3 Foundation\nFounded and exited two startups\nFull-time on YieldShield"
+    }
+  },
+  {
+    "updatePageElementTransform": {
+      "objectId": "p7_i5",
+      "applyMode": "ABSOLUTE",
+      "transform": {
+        "scaleX": 1.0795,
+        "scaleY": 0.66675,
+        "translateX": 2571750,
+        "translateY": 2714625,
+        "unit": "EMU"
+      }
+    }
+  },
+  {
+    "updateTextStyle": {
+      "objectId": "p7_i5",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "fontFamily": "Arial",
+        "fontSize": {
+          "magnitude": 18,
+          "unit": "PT"
+        },
+        "bold": false,
+        "foregroundColor": {
+          "opaqueColor": {
+            "rgbColor": {
+              "red": 0.37254901960784315,
+              "green": 0.4549019607843137,
+              "blue": 0.40784313725490196
+            }
+          }
+        }
+      },
+      "fields": "fontFamily,fontSize,bold,foregroundColor"
+    }
+  },
+  {
+    "updateParagraphStyle": {
+      "objectId": "p7_i5",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "lineSpacing": 110,
+        "spaceAbove": {
+          "magnitude": 0,
+          "unit": "PT"
+        },
+        "spaceBelow": {
+          "magnitude": 0,
+          "unit": "PT"
+        }
+      },
+      "fields": "lineSpacing,spaceAbove,spaceBelow"
+    }
+  },
+  {
+    "deleteText": {
+      "objectId": "p7_i6",
+      "textRange": {
+        "type": "ALL"
+      }
+    }
+  },
+  {
+    "insertText": {
+      "objectId": "p7_i6",
+      "insertionIndex": 0,
+      "text": "Santiago Balaguer"
+    }
+  },
+  {
+    "updatePageElementTransform": {
+      "objectId": "p7_i6",
+      "applyMode": "ABSOLUTE",
+      "transform": {
+        "scaleX": 1.0795,
+        "scaleY": 0.13335,
+        "translateX": 8286750,
+        "translateY": 2171700,
+        "unit": "EMU"
+      }
+    }
+  },
+  {
+    "updateTextStyle": {
+      "objectId": "p7_i6",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "fontFamily": "Arial",
+        "fontSize": {
+          "magnitude": 22.5,
+          "unit": "PT"
+        },
+        "bold": true,
+        "foregroundColor": {
+          "opaqueColor": {
+            "rgbColor": {
+              "red": 0.09803921568627451,
+              "green": 0.23921568627450981,
+              "blue": 0.19215686274509805
+            }
+          }
+        }
+      },
+      "fields": "fontFamily,fontSize,bold,foregroundColor"
+    }
+  },
+  {
+    "updateParagraphStyle": {
+      "objectId": "p7_i6",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "lineSpacing": 110,
+        "spaceAbove": {
+          "magnitude": 0,
+          "unit": "PT"
+        },
+        "spaceBelow": {
+          "magnitude": 0,
+          "unit": "PT"
+        }
+      },
+      "fields": "lineSpacing,spaceAbove,spaceBelow"
+    }
+  },
+  {
+    "deleteText": {
+      "objectId": "p7_i7",
+      "textRange": {
+        "type": "ALL"
+      }
+    }
+  },
+  {
+    "insertText": {
+      "objectId": "p7_i7",
+      "insertionIndex": 0,
+      "text": "Cofounder and Product Lead\n15 years in product\n5 years in crypto\nBased in Berlin"
+    }
+  },
+  {
+    "updatePageElementTransform": {
+      "objectId": "p7_i7",
+      "applyMode": "ABSOLUTE",
+      "transform": {
+        "scaleX": 1.0795,
+        "scaleY": 0.66675,
+        "translateX": 8286750,
+        "translateY": 2714625,
+        "unit": "EMU"
+      }
+    }
+  },
+  {
+    "updateTextStyle": {
+      "objectId": "p7_i7",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "fontFamily": "Arial",
+        "fontSize": {
+          "magnitude": 18,
+          "unit": "PT"
+        },
+        "bold": false,
+        "foregroundColor": {
+          "opaqueColor": {
+            "rgbColor": {
+              "red": 0.37254901960784315,
+              "green": 0.4549019607843137,
+              "blue": 0.40784313725490196
+            }
+          }
+        }
+      },
+      "fields": "fontFamily,fontSize,bold,foregroundColor"
+    }
+  },
+  {
+    "updateParagraphStyle": {
+      "objectId": "p7_i7",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "lineSpacing": 110,
+        "spaceAbove": {
+          "magnitude": 0,
+          "unit": "PT"
+        },
+        "spaceBelow": {
+          "magnitude": 0,
+          "unit": "PT"
+        }
+      },
+      "fields": "lineSpacing,spaceAbove,spaceBelow"
+    }
+  },
+  {
+    "deleteText": {
+      "objectId": "p7_i8",
+      "textRange": {
+        "type": "ALL"
+      }
+    }
+  },
+  {
+    "insertText": {
+      "objectId": "p7_i8",
+      "insertionIndex": 0,
+      "text": "Hawig Ventures UG (haftungsbeschränkt), Germany"
+    }
+  },
+  {
+    "updatePageElementTransform": {
+      "objectId": "p7_i8",
+      "applyMode": "ABSOLUTE",
+      "transform": {
+        "scaleX": 3.683,
+        "scaleY": 0.13335,
+        "translateX": 571500,
+        "translateY": 5238750,
+        "unit": "EMU"
+      }
+    }
+  },
+  {
+    "updateTextStyle": {
+      "objectId": "p7_i8",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "fontFamily": "Arial",
+        "fontSize": {
+          "magnitude": 19.5,
+          "unit": "PT"
+        },
+        "bold": true,
+        "foregroundColor": {
+          "opaqueColor": {
+            "rgbColor": {
+              "red": 0.09803921568627451,
+              "green": 0.23921568627450981,
+              "blue": 0.19215686274509805
+            }
+          }
+        }
+      },
+      "fields": "fontFamily,fontSize,bold,foregroundColor"
+    }
+  },
+  {
+    "updateParagraphStyle": {
+      "objectId": "p7_i8",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "lineSpacing": 110,
+        "spaceAbove": {
+          "magnitude": 0,
+          "unit": "PT"
+        },
+        "spaceBelow": {
+          "magnitude": 0,
+          "unit": "PT"
+        }
+      },
+      "fields": "lineSpacing,spaceAbove,spaceBelow"
+    }
+  },
+  {
+    "deleteText": {
+      "objectId": "p7_i9",
+      "textRange": {
+        "type": "ALL"
+      }
+    }
+  },
+  {
+    "insertText": {
+      "objectId": "p7_i9",
+      "insertionIndex": 0,
+      "text": "Self-funded. No grants or investment received. Founders own the work and review AI-assisted development."
+    }
+  },
+  {
+    "updatePageElementTransform": {
+      "objectId": "p7_i9",
+      "applyMode": "ABSOLUTE",
+      "transform": {
+        "scaleX": 3.683,
+        "scaleY": 0.1778,
+        "translateX": 571500,
+        "translateY": 5676900,
+        "unit": "EMU"
+      }
+    }
+  },
+  {
+    "updateTextStyle": {
+      "objectId": "p7_i9",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "fontFamily": "Arial",
+        "fontSize": {
+          "magnitude": 16.5,
+          "unit": "PT"
+        },
+        "bold": false,
+        "foregroundColor": {
+          "opaqueColor": {
+            "rgbColor": {
+              "red": 0.37254901960784315,
+              "green": 0.4549019607843137,
+              "blue": 0.40784313725490196
+            }
+          }
+        }
+      },
+      "fields": "fontFamily,fontSize,bold,foregroundColor"
+    }
+  },
+  {
+    "updateParagraphStyle": {
+      "objectId": "p7_i9",
+      "textRange": {
+        "type": "ALL"
+      },
+      "style": {
+        "lineSpacing": 110,
+        "spaceAbove": {
+          "magnitude": 0,
+          "unit": "PT"
+        },
+        "spaceBelow": {
+          "magnitude": 0,
+          "unit": "PT"
+        }
+      },
+      "fields": "lineSpacing,spaceAbove,spaceBelow"
+    }
+  }
+]
