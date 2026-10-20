@@ -8,32 +8,53 @@ https://drive.google.com/file/d/1p2Z-BrsxhwNZD4KwvxFsHj5FE8tdvA22/view
 
 ## Edit source
 
-`build-requests.mjs` emits Google Slides batch-update requests. It does not
-authenticate or publish. The `team` phase edits the founder layout; the `story`
-phase refines the narrative and recreates the milestone table as native cells.
-These are one-time migrations of the source slide objects, not an idempotent
-rebuild of an empty presentation.
+`redesign-requests.mjs` emits separate Google Slides batch-update batches for
+the title slide, editable diagrams/layouts, and deployed-product screenshot.
+It does not authenticate or publish. Run it with a full native presentation
+readback and an output directory. These are one-time migrations of the source
+objects, not an idempotent rebuild. `build-requests.mjs` retains the preceding
+content and founder-photo migration for provenance.
 
-The eight source slides keep their identity and order:
+The redesign adds a title slide and retains all eight original page identities:
 
-1. Cover: existing `p1`, headline and grant split.
-2. Problem: existing `p2`, holder and provider perspectives.
-3. Mechanism: existing `p3`, entry, two exits and maturity.
-4. Circle integration: existing `p4`, assets and planned routes.
-5. Evidence: existing `p5`, deployment checks and honest limits.
-6. Pilot: existing `p6`, recruitment, journeys and measurements.
-7. Team: existing `p7`, replace text-only layout with the founder portraits.
-8. Milestones: existing `p8`, replace the raster table with native table cells.
+1. `arc_title_20261020`: a minimal title over architectural cover art.
+2. `p1`: the holder's choice, shown as two branches.
+3. `p2`: asset and capital flows into the pool, with the 150% reserve ratio.
+4. `p3`: the two exits, gain-fee split and maturity behavior.
+5. `p4`: current Circle assets and Arc architecture beside proposed bridges.
+6. `p5`: an actual deployed markets screenshot and test evidence.
+7. `p6`: a pilot funnel with measurable, explicitly future targets.
+8. `p7`: large founder portraits, names, roles and concise experience.
+9. `p8`: the native four-milestone budget table.
 
-The original 16:9 canvas, Arial typography and green/coral identity remain.
-All narrative text and the milestone table are native editable objects.
-Portraits retain their square proportions with no facial edits.
+The 960 × 540 point canvas uses Manrope, forest green, warm ivory and coral.
+All narrative text, flow connectors, diagram labels and table cells remain
+editable. Generated art is confined to the title background. The product image
+is a genuine capture; the founder photos are retained without facial edits.
 
-The two portrait objects use the local files below, each at 135 × 135 points.
-David sits at (45, 171) points and Santiago at (502.5, 171) points on slide `p7`.
-The native object IDs are `arc_david_portrait` and `arc_santiago_portrait`.
-Insert them through the Google Drive connector's local-image sidecar before
-applying the `story` phase, which adds their accessible names.
+The two portrait objects are each 195 × 195 points. Their native IDs remain
+`arc_david_portrait` and `arc_santiago_portrait`, with accessible names.
+
+## Visual provenance
+
+- `assets/markets-live-2026-10-20.png`: captured from
+  https://arc.yieldshield.ai/markets in Chrome on 20 October 2026. Displayed
+  with its original aspect ratio. This is the disconnected public testnet UI.
+- `assets/arc-cover.png`: generated with OpenAI image generation on
+  20 October 2026. It is decorative artwork, not a product view, token logo,
+  financial model or safety guarantee. The original 1672 × 941 aspect ratio
+  is retained with a negligible vertical bleed.
+
+Cover generation prompt:
+
+> Use case: stylized-concept. Asset type: full-bleed 16:9 title-slide background
+> for YieldShield Arc, a protocol for funded protection of tokenized assets.
+> Refined architectural still life with a sculptural deep forest green arch
+> sheltering two simple warm ivory circular discs, on a low muted coral stone
+> foundation, in a seamless dark evergreen studio (#12372c). Sculpture entirely
+> in the right 48%, quiet left 52% for native editable title. Large, tactile matte
+> stone and satin ceramic, restrained premium editorial lighting, soft shadows,
+> no glow, no currency markings, no text, logos or watermarks.
 
 ## Content checks
 
