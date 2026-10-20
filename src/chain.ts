@@ -65,7 +65,7 @@ export const client = createPublicClient({
   batch: multicall ? { multicall: true } : undefined,
   transport: localMode
     ? http(config.rpcUrl, { timeout: 12000, retryCount: 1, batch: !multicall })
-    : readTransport([config.rpcUrl, ...ARC_RPC_URLS]),
+    : readTransport(["/api/arc-rpc", config.rpcUrl, ...ARC_RPC_URLS], 20000),
 });
 // Nested token calls revert with OpenZeppelin errors; include them so failures decode.
 const tokenErrors = parseAbi([

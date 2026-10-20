@@ -83,8 +83,21 @@ function pythProxy(): Plugin {
   };
 }
 
+function arcRpcProxy(): Plugin {
+  return {
+    name: "yieldshield-arc-rpc",
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        if ((req.url ?? "").split("?")[0] !== "/api/arc-rpc") return next();
+        const { default: handler } = await import("./api/arc-rpc.js");
+        await handler(req, res);
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), agentManifest(), pythProxy()],
+  plugins: [react(), agentManifest(), pythProxy(), arcRpcProxy()],
   build: {
     rolldownOptions: {
       output: {
