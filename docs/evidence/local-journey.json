@@ -2,8 +2,8 @@
   "network": "Local Anvil only (chain 31337); not Arc testnet. Assets and Pyth are local stand-ins (MockPyth).",
   "oracle": "pyth",
   "chainId": 31337,
-  "createdAt": "2026-10-19T13:25:14.906Z",
-  "parentCommit": "2fbd5580c54376a88860a603cf6013b7b3926062",
+  "createdAt": "2026-10-20T06:38:13.531Z",
+  "parentCommit": "25edf2d77506d298c809c58b156f8d32bc014f80",
   "sourceHash": {
     "contracts/src/ShieldPool.sol": "0xefd2569a6ff811e0a2067b81886ee40e306eca5e0fd429dacbddcf9fcdaa1da1",
     "contracts/src/ShieldFactory.sol": "0x409bbd7ecb900f5612df0b3c16ba2db8ad0b110b40713505369e7746e1e384e9",
@@ -82,7 +82,7 @@
     },
     {
       "label": "local-pyth-eurcUsd",
-      "hash": "0x0b0dafe988e8e746541994e1aab02dac3537514ded629d0517cb42753aa0318e",
+      "hash": "0x7cf0085fbef984d86fe3d4469416555f992e2df84c1f975934c902dc18347999",
       "blockNumber": "6",
       "status": "success",
       "contractAddress": null,
@@ -90,7 +90,7 @@
     },
     {
       "label": "local-pyth-usdcUsd",
-      "hash": "0x385f393532d101f7eed5187faf5aaf797e938862c32e43492c9187b857d8e2c9",
+      "hash": "0x82fd3b46b4a17e0100cf8f8bf2e98e59de174e226ce488f00d91541cd92b0142",
       "blockNumber": "7",
       "status": "success",
       "contractAddress": null,
@@ -98,7 +98,7 @@
     },
     {
       "label": "local-pyth-btcUsd",
-      "hash": "0xff407cc85348c4c9b3e67a29c22f21dee70fc7cc230cd74405c94f6cb516a957",
+      "hash": "0xcdd741f6a042a865d48b573b172362e0fc4e8c6286a434172c8addc1b77ee13c",
       "blockNumber": "8",
       "status": "success",
       "contractAddress": null,
@@ -194,7 +194,7 @@
     },
     {
       "label": "pyth-update",
-      "hash": "0x46f70c4a2699d0ba6c3b0081e1e04de70f6d669c75c8b308caff3994591a62bf",
+      "hash": "0x1cf8c571780167fd4ab9442cb5357685d958386538fcc133222ad220be36eb0b",
       "blockNumber": "20",
       "status": "success",
       "contractAddress": null,
@@ -202,7 +202,7 @@
     },
     {
       "label": "eurcPool-factory-create",
-      "hash": "0x997d2bde04b52865cc3da32cdbd73a12a5c5a34b54f6520009a036ae868338f0",
+      "hash": "0x0fb11d9f5019cca2203425107a1ef2141febeafc53ea862ebc32778544499bf6",
       "blockNumber": "21",
       "status": "success",
       "contractAddress": null,
@@ -210,7 +210,7 @@
     },
     {
       "label": "pyth-update",
-      "hash": "0x59fd12def02b91206c15b01f99d4574d25c1fb544d771c94300745bd8e657ca1",
+      "hash": "0x9f345040b3ebb380906452cfd049a40565d902a5f97545f4b4346eae15116d13",
       "blockNumber": "22",
       "status": "success",
       "contractAddress": null,
@@ -218,7 +218,7 @@
     },
     {
       "label": "cirbtcPool-factory-create",
-      "hash": "0x0dabf2f8d30cb81dc50c6a80b8ad67ad91bf0ca3afd04044a6e8b3dbe59d23fb",
+      "hash": "0x57593288d873fa8b745069f7867febfbae2c1712274732ec1dce05656d556942",
       "blockNumber": "23",
       "status": "success",
       "contractAddress": null,
@@ -226,7 +226,7 @@
     },
     {
       "label": "scenarioPool-factory-create",
-      "hash": "0x7f5354f4d8c154d597affabb239bf988f567ff6f420874481577ce8b2d864617",
+      "hash": "0x497f27fc1ab35bce83c64f5d0415d2953c9f77aa7f46a24aa567def608d58942",
       "blockNumber": "24",
       "status": "success",
       "contractAddress": null,
@@ -242,7 +242,7 @@
     },
     {
       "label": "pyth-update",
-      "hash": "0x026d7331fe27ecbf480f30396c1efa2fbc6a62134f10e9aff68b76f12333f8f3",
+      "hash": "0x30a4b37981b96e9d09a09a846cf0f65793fc993452314beba24931d007c8276f",
       "blockNumber": "26",
       "status": "success",
       "contractAddress": null,
@@ -250,7 +250,7 @@
     },
     {
       "label": "provider-deposit-eurc",
-      "hash": "0x59e20e233d4662ecf5944d6ed57a1343da5ca3ae83d0ca1259ba92ac6034cac2",
+      "hash": "0xd94bf62dfa98688d098981b1f7b831f303da2716ef01c5da04f6768a7008e169",
       "blockNumber": "27",
       "status": "success",
       "contractAddress": null,
@@ -266,7 +266,7 @@
     },
     {
       "label": "pyth-update",
-      "hash": "0x6a744c1cfac96de59fff92391718a41a771451737bc48552c49cac532bded80d",
+      "hash": "0x12033a0d71e70ade5a3bd3185d3d81845595d8c7f70ad0b639084d686045094f",
       "blockNumber": "29",
       "status": "success",
       "contractAddress": null,
@@ -274,7 +274,7 @@
     },
     {
       "label": "holder-protect-eurc",
-      "hash": "0xb01fc2eb1584510484a8fdba07fd6611209f334a53ba5a168316e2e38a97a09d",
+      "hash": "0x74c6c8983ed36869d0c5fb98dcc84f09e3cd28add4804892ca2df39b34bf6c6c",
       "blockNumber": "30",
       "status": "success",
       "contractAddress": null,
@@ -282,7 +282,7 @@
     },
     {
       "label": "pyth-update",
-      "hash": "0xdd0fa4ff096b5f938834fbb783a1569fa63e4363715f3da6693f1aa9b69278ff",
+      "hash": "0x074cc83f0b1b53a1695305681b1a8adcfa706953f27943ad7678555eb6958a89",
       "blockNumber": "32",
       "status": "success",
       "contractAddress": null,
@@ -290,7 +290,7 @@
     },
     {
       "label": "holder-partial-asset-exit-eurc",
-      "hash": "0xb7b35d0d9d9034ff3b1b62e293f66da7a180ce86277d61b032d7ebae8d9c5449",
+      "hash": "0xa62b9e843bd5bc04934225df69ad92f0e9665f437f4b6d3b6cbae2483f600be8",
       "blockNumber": "33",
       "status": "success",
       "contractAddress": null,
@@ -314,7 +314,7 @@
     },
     {
       "label": "new-owner-backing-exit",
-      "hash": "0x0c485b78c01a1717e294dbe1dbd0a928cb5c88fbb68ee133ef2625012591921e",
+      "hash": "0xb3d6f4b4e3df0cfe3ae2e50909b3e65f505d9fcf85a32b570b9aee3213ec1333",
       "blockNumber": "36",
       "status": "success",
       "contractAddress": null,
@@ -330,15 +330,15 @@
     },
     {
       "label": "pyth-update",
-      "hash": "0x7a764bf077ee4cd769c7f03240906e7e47dbf05f3eafaefeaf1a468574ecacdd",
+      "hash": "0x68bf3b053423702ee7911a83266706165b21a212060903c8c705827e53ac042f",
       "blockNumber": "39",
       "status": "success",
       "contractAddress": null,
-      "gasUsed": "54934"
+      "gasUsed": "54898"
     },
     {
       "label": "provider-partial-redemption",
-      "hash": "0xa43eb9be0f522722622af9027f556603ecb769e73972bba39a8a349367a50f45",
+      "hash": "0xc908ccc87a014965401e433448cc6becbbd8b49c05f99eb14fa7404dd799f65e",
       "blockNumber": "40",
       "status": "success",
       "contractAddress": null,
@@ -346,7 +346,7 @@
     },
     {
       "label": "creator-protocol-pull-fees",
-      "hash": "0x6c58d527f0564d40813da32e520db93ba25998a8abeefdd89eb619ccdcbc9516",
+      "hash": "0x7f5eb10ea975a589fee1019dbffb4129a1591a4cf3e52a848df00a9d91e6601d",
       "blockNumber": "41",
       "status": "success",
       "contractAddress": null,
@@ -354,7 +354,7 @@
     },
     {
       "label": "provider-usdc-approve-cirbtc",
-      "hash": "0xad2c980d811c8db20d3cb14035abad35d8b9ada9df9156039a6b8312c6682c27",
+      "hash": "0x56a5ed178bb84344160e563663d9a1639724ffefd0428b3015bf275b562c682f",
       "blockNumber": "42",
       "status": "success",
       "contractAddress": null,
@@ -362,7 +362,7 @@
     },
     {
       "label": "provider-deposit-cirbtc",
-      "hash": "0xfb64638a2e24fec290fa2e9380932244ca1f6c496bbc1f6009bda2991fca79dd",
+      "hash": "0x5e93dc7c011249414e5b0a1e78b6d0459ab48926b76b7e7e8a22945d8dd3ea6b",
       "blockNumber": "43",
       "status": "success",
       "contractAddress": null,
@@ -370,7 +370,7 @@
     },
     {
       "label": "holder-cirbtc-approve",
-      "hash": "0xc71919e078cbdda6f2c2113e6eb04959d8a120b2b5aff1b7551b22dd168ec1bb",
+      "hash": "0x14dc38d1034d58aa7d0f67a05ce12b91cad9c83f61a5ecb9aa69baa0abbea56d",
       "blockNumber": "44",
       "status": "success",
       "contractAddress": null,
@@ -378,15 +378,15 @@
     },
     {
       "label": "pyth-update",
-      "hash": "0xbf3bb19c313e3cd078be77703920507cff57a02906929770c44cd939d6a19203",
+      "hash": "0xdeb9c3847b5eacebe42592968b3b1cd8b4e11b4ac70deeb88103b0c655873e49",
       "blockNumber": "45",
       "status": "success",
       "contractAddress": null,
-      "gasUsed": "38494"
+      "gasUsed": "38458"
     },
     {
       "label": "holder-protect-cirbtc",
-      "hash": "0x12338cdc6deb0aba2cd0ff92b8555d776aa7a4f60383fd860632e7fc30b5143c",
+      "hash": "0x665e3244c533db79237607ed6fe30d51c6a66fce0d00afbd71b84800cab73f3f",
       "blockNumber": "46",
       "status": "success",
       "contractAddress": null,
@@ -394,7 +394,7 @@
     },
     {
       "label": "holder-cirbtc-backing-exit-while-stale",
-      "hash": "0x5cad72d56c3a2e3af57ef87273b3096387855a7dbe4e4366815c278d9c41e83d",
+      "hash": "0xf0905f1c27943de2836ff46d217138530348026eadf061bb8f7f39f5a3a4fccc",
       "blockNumber": "48",
       "status": "success",
       "contractAddress": null,
@@ -402,7 +402,7 @@
     },
     {
       "label": "pyth-update",
-      "hash": "0xd634a867e985f31c8bc86fff5144b88aa48a60777f077fa4b9fceb42e7164164",
+      "hash": "0x4148e5f554f420f24598c94e2e68e6ecf3ce029565dedbb6911a7fe23554aa23",
       "blockNumber": "49",
       "status": "success",
       "contractAddress": null,
@@ -410,7 +410,7 @@
     },
     {
       "label": "provider-usdc-approve-scenario",
-      "hash": "0xa5244483e94ceade0b117692e6d554f8638e42b576725a2987614b968b07ebc2",
+      "hash": "0x7c5edfe39cf2bbb9ed6f073a9bf2375b3ce4c211a6a3581d675f76a3b18d9ed6",
       "blockNumber": "50",
       "status": "success",
       "contractAddress": null,
@@ -418,7 +418,7 @@
     },
     {
       "label": "provider-deposit-scenario",
-      "hash": "0xa070ff66f377bc14b57b8cc6d876a0bc641119cddfa2cde5aa923fbcc2ed5613",
+      "hash": "0x4c39e7f1bdebbc3544dad46673894bad9649b8525ecceebf29470786c2c93b37",
       "blockNumber": "51",
       "status": "success",
       "contractAddress": null,
@@ -426,7 +426,7 @@
     },
     {
       "label": "holder-scenario-approve",
-      "hash": "0x834ed770e6048c3c8bbb2164f76754903e20589297a2943ae34d0aef86dabf06",
+      "hash": "0x4d605d9613e0db887f51b80ed0939a4ea29fbf45945ab4dcba4b4ee0c40f9f3a",
       "blockNumber": "52",
       "status": "success",
       "contractAddress": null,
@@ -434,7 +434,7 @@
     },
     {
       "label": "holder-scenario-protect",
-      "hash": "0xdec6f3484d3047fb81292ebd8d3d902aacd018c604dc8c24d07faf75e5a02a6a",
+      "hash": "0xa7726200726f57502148a2f8f4b011a5146238fc5bbda87aa7cd20f92dbadb6d",
       "blockNumber": "53",
       "status": "success",
       "contractAddress": null,
@@ -442,7 +442,7 @@
     },
     {
       "label": "permissionless-expiry",
-      "hash": "0x45897f657c7eb1520df5e93375055c9a0c52470620470a06ddc4e8d815d7a006",
+      "hash": "0xfbff824e25ae065a34857a7cc00e5d0778468e80cddd30eeebd5ef104b155950",
       "blockNumber": "55",
       "status": "success",
       "contractAddress": null,
@@ -450,7 +450,7 @@
     },
     {
       "label": "holder-matured-backing-claim",
-      "hash": "0x196d85d2c2db5dbac626551a67a57a7e5a832b8a11d163e77d583a21103893f4",
+      "hash": "0xa109a56d046ffb8a520168cf96dc1bd1a3945f5f4a4372306fe1a677b4522952",
       "blockNumber": "56",
       "status": "success",
       "contractAddress": null,

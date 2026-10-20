@@ -4,7 +4,7 @@
 
 | Item | Value |
 |---|---|
-| Vercel project | `yieldshield-arc`, in the YieldShield team |
+| Vercel project | `yieldshield-arc`, in the HawigUG team (`noc2-6281s-projects`) |
 | Production domain | `arc.yieldshield.ai` |
 | Git source | `YieldShield/yieldshield-arc`, branch `main` |
 | Framework preset | Vite |
@@ -37,7 +37,7 @@ Hashed `/assets/*` are cached immutably.
 - `.local`;
 - `node_modules`, Foundry output and test reports.
 
-The site is static apart from the optional price proxy. Public identities come from `config/deployment.json`. A production build cannot enable local-chain mode.
+The site is static apart from the read-only Arc RPC endpoint and optional Pyth price proxy. Public identities come from `config/deployment.json`. A production build cannot enable local-chain mode.
 
 ## Checks after each release
 
@@ -49,3 +49,23 @@ The site is static apart from the optional price proxy. Public identities come f
 - At 390 px the page has no horizontal overflow (`npm run test:browser` covers this locally).
 
 After each featured-market replacement (next due before 18 November 2026, 13:33 UTC), rebuild so the site and `/agent.json` carry the new addresses. Record each release here: commit, deployment ID and checks.
+
+## 20 October 2026 — browser RPC repair
+
+Production code release `132e84c`, deployment `dpl_8cD6Dxmcp2X2cq8vGyUHvhi64Akw`,
+was READY and serving `arc.yieldshield.ai`. Subsequent documentation/media commits
+use the same production Git integration; inspect the latest deployment for its SHA.
+
+The browser first reads `/api/arc-rpc`. This fixed-upstream endpoint allows only
+read/simulation methods, rejects signing and broadcasting methods and JSON-RPC batches,
+limits requests to 64 KiB and responses to 2 MiB, uses five-second upstream deadlines,
+and preserves contract reverts. It never forwards client cookies, credentials or a
+client-selected URL. It uses the three official Arc endpoints with Blockdaemon first.
+Wallet signatures and broadcasts remain with the user's provider. If the same-origin
+endpoint is unavailable, the client attempts the official endpoints directly with
+bounded timeouts. Responses are not cached.
+
+Chrome checks on the production domain confirmed successful registry and all three
+market reads, fresh reference prices, restored entry capacity and readable protection
+terms. `/api/arc-rpc` returned chain `0x4cef52` and rejected `eth_sendRawTransaction`
+with HTTP 400. See [the release verification report](E2E_REPORT_2026-10-20.md).

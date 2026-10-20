@@ -1,6 +1,8 @@
 # End-to-end verification
 
-Date: 19 October 2026. This report separates what ran on which network.
+Latest checks: [20 October 2026 release verification](E2E_REPORT_2026-10-20.md).
+
+The report below records 19 October 2026 and separates what ran on which network.
 
 **Arc testnet status:** the contracts are deployed and verified, and a scripted test wallet has completed a journey. No real wallet extension has signed yet.
 
